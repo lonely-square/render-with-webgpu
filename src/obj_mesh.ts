@@ -32,7 +32,7 @@ export class objMesh {
         const fileContents = (await blob.text())
         const lines = fileContents.split("\n")
         let mtlCount=0
-        let mtlName: string
+        let mtlName=''
 
         lines.forEach(
             (line) => {
@@ -46,14 +46,14 @@ export class objMesh {
                     this.read_normal_data(line);
                 }
                 else if (line.slice(0,6) == "usemtl") {
-                    if (mtlCount !=0){
-                        
-                        const mtl= line.split("/");
-                        mtlName=mtl[1];
+                    if (mtlCount !=0){      
                         const a={ "uvname":mtlName ,"vertex": new Float32Array(result),"vertexCount":0};
                         a.vertexCount = a.vertex.length /5;
                         this.vertices.push(a);
+                        result = [];
                     }
+                    const mtl= line.split(" ");
+                    mtlName=mtl[1];
                     mtlCount++;
                 }
                 else if(line[0] == "f"){
@@ -62,7 +62,10 @@ export class objMesh {
             }
         )
 
-        
+        const a={ "uvname":mtlName ,"vertex": new Float32Array(result),"vertexCount":0};
+        a.vertexCount = a.vertex.length /5;
+        this.vertices.push(a);
+      
     }
 
     read_vertex_data(line: string) {

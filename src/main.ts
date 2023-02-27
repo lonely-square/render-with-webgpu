@@ -1,17 +1,11 @@
 import $ from 'jquery';
-import { CheckWebGPU } from './helper';
 import  vertexShader  from './shader/vertex_01.wgsl';
 import  fragmentShader  from './shader/fragment_01.wgsl';
 import { objMesh } from './obj_mesh';
 import { vec3 } from 'gl-matrix';
 import { getTransformationMatrix } from './matrix'
 
-
-const CreateTrangle =async () => {
-    const checkgpu = CheckWebGPU();
-    if (checkgpu.includes('Your current browser does not support WebGPU!')){
-        throw('Your current browser does not support WebGPU!');
-    }
+const createObj = async (modelUrl : string,texUrl : string[])=>{
 
     const canvas = document.getElementById('canvas-webgpu') as HTMLCanvasElement;
     const adapter = await navigator.gpu?.requestAdapter() as GPUAdapter;
@@ -30,15 +24,70 @@ const CreateTrangle =async () => {
     });
 
     var lanternObj = new objMesh()
-    await lanternObj.initialize("./model/lantern/lantern.obj")
-    const texture_1 = new Image()
-    const texture_2 = new Image()
-    texture_1.src = "./model/lantern/tex/000001B95523DFF8.jpg"
-    texture_2.src = "./model/lantern/tex/000001B955240538.jpg"
-    await texture_1.decode()
-    await texture_2.decode()
+    await lanternObj.initialize(modelUrl)
+    
 
+    //绑定资源部分
+    const vertexBufferList: GPUBuffer[]=[]
+    const cubeTextureList: GPUTexture[]=[]
+    const bindGroupList : GPUBindGroup[]=[]
 
+    texUrl.forEach((url)=>{
+        const name = url.split('/').pop()        
+        const verticesTemp=lanternObj.vertices.filter(obj => `${obj.uvname}.jpg` === name)[0];
+        lanternObj.vertices.push(verticesTemp)
+
+    })
+    texUrl.forEach(()=>{
+        lanternObj.vertices.shift()
+    })
+    
+    console.log(lanternObj.vertices)
+
+    //模型数据放入缓存
+    let count=0;
+    for (let url of texUrl){
+        const texture = new Image()
+        texture.src = url
+        await texture.decode()
+
+        const imageBitmap = await createImageBitmap(texture);
+    
+        const cubeTexture = device.createTexture({
+        size: [imageBitmap.width, imageBitmap.height, 1],
+        format: 'rgba8unorm',
+        usage:
+            GPUTextureUsage.TEXTURE_BINDING |
+            GPUTextureUsage.COPY_DST |
+            GPUTextureUsage.RENDER_ATTACHMENT,
+        });
+        device.queue.copyExternalImageToTexture(
+        { source: imageBitmap },
+        { texture: cubeTexture },
+        [imageBitmap.width, imageBitmap.height]
+        );
+
+        cubeTextureList.push(cubeTexture)
+
+           
+        //Buffer has been created, now load in the vertices
+
+        const vertexBufferDescriptor: GPUBufferDescriptor = {
+            size: lanternObj.vertices[count].vertex.byteLength,
+            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+            mappedAtCreation: true // similar to HOST_VISIBLE, allows buffer to be written by the CPU
+        };
+        const buffer = device.createBuffer(vertexBufferDescriptor);
+        new Float32Array(buffer.getMappedRange())
+        .set(lanternObj.vertices[count].vertex);
+        buffer.unmap();
+        vertexBufferList.push(buffer);
+        
+        count++
+    }
+    
+
+    
 
     //设置BindGroupLayout
     const piplineGroupLayout = device.createBindGroupLayout({
@@ -122,85 +171,50 @@ const CreateTrangle =async () => {
     });
 
 
-    //绑定资源部分
-    var buffer: GPUBuffer
-    //模型数据放入缓存
-    { 
-    const usage: GPUBufferUsageFlags = GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST;
-    //VERTEX: the buffer can be used as a vertex buffer
-    //COPY_DST: data can be copied to the buffer
 
-    const descriptor: GPUBufferDescriptor = {
-        size: lanternObj.vertices[0].vertex.byteLength,
-        usage: usage,
-        mappedAtCreation: true // similar to HOST_VISIBLE, allows buffer to be written by the CPU
-    };
-
-    buffer = device.createBuffer(descriptor);
-
-    //Buffer has been created, now load in the vertices
-    new Float32Array(buffer.getMappedRange()).set(lanternObj.vertices[0].vertex);
-    buffer.unmap();
-    }
     const mvpMatrix = device.createBuffer({
         size : 4*4*4,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
-    
-    let cubeTexture: GPUTexture;
-    {
 
-      const imageBitmap = await createImageBitmap(texture_2);
-  
-      cubeTexture = device.createTexture({
-        size: [imageBitmap.width, imageBitmap.height, 1],
-        format: 'rgba8unorm',
-        usage:
-          GPUTextureUsage.TEXTURE_BINDING |
-          GPUTextureUsage.COPY_DST |
-          GPUTextureUsage.RENDER_ATTACHMENT,
-      });
-      device.queue.copyExternalImageToTexture(
-        { source: imageBitmap },
-        { texture: cubeTexture },
-        [imageBitmap.width, imageBitmap.height]
-      );
-    }
     const sampler = device.createSampler({
         magFilter: 'linear',
         minFilter: 'linear',
       });
 
+    
+    texUrl.forEach((url,index)=>{
+        const uniformBindGroup = device.createBindGroup({
+            layout: pipeline.getBindGroupLayout(0),
+            entries: [
+              {
+                binding: 0,
+                resource: {
+                  buffer: mvpMatrix,
+                }
+              },
+              {
+                binding: 1,
+                resource: sampler,
+              },
+              {
+                binding: 2,
+                resource: cubeTextureList[index].createView(),
+              },
+            ],
+          });
 
-    const uniformBindGroup = device.createBindGroup({
-        layout: pipeline.getBindGroupLayout(0),
-        entries: [
-          {
-            binding: 0,
-            resource: {
-              buffer: mvpMatrix,
-            }
-          },
-          {
-            binding: 1,
-            resource: sampler,
-          },
-          {
-            binding: 2,
-            resource: cubeTexture.createView(),
-          },
-        ],
-      });
+          bindGroupList.push(uniformBindGroup);
 
-
+    })
+    console.log(bindGroupList[1] == bindGroupList[0])
 
 
       const position = {x:0,y:0,z:-1}
       const rotation = {x:0,y:0,z:0}
       const scale = {x:1,y:1,z:1}
     
-
-    
+  
 
     function frame() {
         rotation.x += 0.001;
@@ -246,16 +260,36 @@ const CreateTrangle =async () => {
         };
 
         const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
-        passEncoder.setPipeline(pipeline);
-        passEncoder.setBindGroup(0,uniformBindGroup);
-        passEncoder.setVertexBuffer(0,buffer);
-        passEncoder.draw(lanternObj.vertices[0].vertexCount, 1, 0, 0);
+        
+
+        texUrl.forEach((url,index)=>{
+            passEncoder.setPipeline(pipeline);
+            passEncoder.setBindGroup(0,bindGroupList[index]);
+            passEncoder.setVertexBuffer(0,vertexBufferList[index]);
+            passEncoder.draw(lanternObj.vertices[index].vertexCount, 1, 0, 0);
+            
+        })
+
         passEncoder.end();
         device.queue.submit([commandEncoder.finish()]);
 
         requestAnimationFrame(frame);
       }
       requestAnimationFrame(frame);
+
+    
+
 }
 
-CreateTrangle();
+
+const main =async () => {
+
+    if (!navigator.gpu){
+        throw('Your current browser does not support WebGPU!');
+    }
+
+    await createObj("./model/lantern/lantern.obj",["./model/lantern/tex/000001B95523DFF8.jpg","./model/lantern/tex/000001B955240538.jpg"]);
+    
+}
+
+main();
