@@ -4,5 +4,9 @@ declare module '*.wgsl' {
     export default shader;
 }
 
+declare module '*.jpg' {
+    const value: any;
+    export default value;
+  }
 
   

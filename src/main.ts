@@ -1,21 +1,21 @@
-import $ from 'jquery';
+import $, { param } from 'jquery';
 import { CheckWebGPU } from './helper';
 import  vertexShader  from './shader/vertex_01.wgsl';
 import  fragmentShader  from './shader/fragment_01.wgsl';
 import { objMesh } from './obj_mesh';
 
 
-const CreateTrangle =async (color=`(1.0,1.0,1.0,1.0)`) => {
+
+const CreateTrangle =async () => {
     const checkgpu = CheckWebGPU();
     if (checkgpu.includes('Your current browser does not support WebGPU!')){
-        console.log(checkgpu);
         throw('Your current browser does not support WebGPU!');
     }
 
     const canvas = document.getElementById('canvas-webgpu') as HTMLCanvasElement;
     const adapter = await navigator.gpu?.requestAdapter() as GPUAdapter;
     const device = await adapter?.requestDevice() as GPUDevice;
-    const context = canvas.getContext('webgpu') as GPUCanvasContext;
+    const context = canvas.getContext('webgpu') as unknown as GPUCanvasContext;
 
     const devicePixelRatio = window.devicePixelRatio || 1;
     canvas.width = canvas.clientWidth * devicePixelRatio;
@@ -29,7 +29,7 @@ const CreateTrangle =async (color=`(1.0,1.0,1.0,1.0)`) => {
     });
 
     var lanternObj = new objMesh()
-    lanternObj.initialize("./model/lantern/lantern.obj")
+    await lanternObj.initialize("./model/lantern/lantern.obj")
 
     var buffer: GPUBuffer
     //模型数据放入缓存
@@ -93,7 +93,6 @@ const CreateTrangle =async (color=`(1.0,1.0,1.0,1.0)`) => {
         },
     });
 
-    frame();
     requestAnimationFrame(frame);
 
     function frame() {

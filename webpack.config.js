@@ -1,5 +1,6 @@
 const path = require("path");
 const bundleOutputDir = "./dist";
+const CopyPlugin = require("copy-webpack-plugin");
 
 module.exports = {
     entry: {
@@ -10,7 +11,7 @@ module.exports = {
         path: path.join(__dirname, bundleOutputDir),
         publicPath: 'public/dist/'
     },
-    devtool: "source-map",
+    devtool: "inline-source-map", //开发环境中使用
     resolve: {
         extensions: ['.js', '.ts']
     },
@@ -35,9 +36,23 @@ module.exports = {
             },
             {
                 test: /\.obj$/i,
-                use:[{ loader: 'webpack-obj-loader'}]
+                use:[{ loader: 'file-loader'}]
+            },
+            {
+                test: /\.(png|svg|jpg|jpeg|gif)$/i,
+                type: 'asset/resource',
+                use: [{ loader: 'file-loader'}]
             }
         ]
-    }
+    },
+    plugins: [
+        new CopyPlugin({
+          patterns: [
+            { from:  'src/model',
+              to: 'model'
+            },
+          ],
+        }),
+    ],
 };
 

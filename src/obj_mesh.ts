@@ -1,5 +1,5 @@
 import { vec2,vec3} from 'gl-matrix'
-
+//模型类，存储模型的各种坐标信息
 export class objMesh {
 
 
