@@ -1,9 +1,10 @@
-import $, { param } from 'jquery';
+import $ from 'jquery';
 import { CheckWebGPU } from './helper';
 import  vertexShader  from './shader/vertex_01.wgsl';
 import  fragmentShader  from './shader/fragment_01.wgsl';
 import { objMesh } from './obj_mesh';
-
+import { vec3 } from 'gl-matrix';
+import { getTransformationMatrix } from './matrix'
 
 
 const CreateTrangle =async () => {
@@ -31,29 +32,24 @@ const CreateTrangle =async () => {
     var lanternObj = new objMesh()
     await lanternObj.initialize("./model/lantern/lantern.obj")
 
-    var buffer: GPUBuffer
-    //模型数据放入缓存
-    { 
-    const usage: GPUBufferUsageFlags = GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST;
-    //VERTEX: the buffer can be used as a vertex buffer
-    //COPY_DST: data can be copied to the buffer
+    const piplineGroupLayout = device.createBindGroupLayout({
+        entries: [
+            {
+                binding: 0,
+                visibility: GPUShaderStage.VERTEX,
+                buffer : {type : 'uniform'}
+            }
+        ]
 
-    const descriptor: GPUBufferDescriptor = {
-        size: lanternObj.vertices.byteLength,
-        usage: usage,
-        mappedAtCreation: true // similar to HOST_VISIBLE, allows buffer to be written by the CPU
-    };
-
-    buffer = device.createBuffer(descriptor);
-
-    //Buffer has been created, now load in the vertices
-    new Float32Array(buffer.getMappedRange()).set(lanternObj.vertices);
-    buffer.unmap();
-    }
-    
+    });
+    const depthTexture = device.createTexture({
+        size: [canvas.width, canvas.height],
+        format: 'depth24plus',
+        usage: GPUTextureUsage.RENDER_ATTACHMENT,
+    });
 
     const pipeline = device.createRenderPipeline({
-        layout: 'auto',
+        layout: device.createPipelineLayout({bindGroupLayouts:[piplineGroupLayout]}),
         vertex: {
             module: device.createShaderModule({
                 code: vertexShader
@@ -90,13 +86,85 @@ const CreateTrangle =async () => {
         },
         primitive: {
             topology: 'triangle-list',
+            // cullMode: 'back',
+        },
+        depthStencil: {
+            depthWriteEnabled: true,
+            depthCompare: 'less',
+            format: 'depth24plus',
         },
     });
 
-    requestAnimationFrame(frame);
+
+    //绑定资源部分
+    var buffer: GPUBuffer
+    //模型数据放入缓存
+    { 
+    const usage: GPUBufferUsageFlags = GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST;
+    //VERTEX: the buffer can be used as a vertex buffer
+    //COPY_DST: data can be copied to the buffer
+
+    const descriptor: GPUBufferDescriptor = {
+        size: lanternObj.vertices.byteLength,
+        usage: usage,
+        mappedAtCreation: true // similar to HOST_VISIBLE, allows buffer to be written by the CPU
+    };
+
+    buffer = device.createBuffer(descriptor);
+
+    //Buffer has been created, now load in the vertices
+    new Float32Array(buffer.getMappedRange()).set(lanternObj.vertices);
+    buffer.unmap();
+    }
+    const mvpMatrix = device.createBuffer({
+        size : 4*4*4,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+
+    const uniformBindGroup = device.createBindGroup({
+        layout: pipeline.getBindGroupLayout(0),
+        entries: [
+          {
+            binding: 0,
+            resource: {
+              buffer: mvpMatrix,
+            }
+          },
+        ],
+      });
+
+
+
+
+      const position = {x:0,y:0,z:-1}
+      const rotation = {x:0,y:0,z:0}
+      const scale = {x:1,y:1,z:1}
+    
+
+    
 
     function frame() {
- 
+        rotation.x += 0.001;
+        rotation.y += 0.00;
+        rotation.z += 0.001;  
+    
+    
+        const transformationMatrix = getTransformationMatrix(canvas.width/canvas.height,
+            vec3.fromValues(position.x,position.y,position.z),
+            vec3.fromValues(rotation.x,rotation.y,rotation.z),
+            vec3.fromValues(scale.x,scale.y,scale.z)
+        );
+        
+       
+        device.queue.writeBuffer(
+          mvpMatrix,
+          0,
+          transformationMatrix.buffer,
+          transformationMatrix.byteOffset,
+          transformationMatrix.byteLength
+        );
+
+       
         const commandEncoder = device.createCommandEncoder();
         const textureView = context.getCurrentTexture().createView();
     
@@ -109,17 +177,26 @@ const CreateTrangle =async () => {
               storeOp: 'store',
             },
           ],
+          depthStencilAttachment: {
+            view: depthTexture.createView(),
+      
+            depthClearValue: 1.0,
+            depthLoadOp: 'clear',
+            depthStoreOp: 'store',
+          },
         };
-    
+
         const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
         passEncoder.setPipeline(pipeline);
+        passEncoder.setBindGroup(0,uniformBindGroup);
         passEncoder.setVertexBuffer(0,buffer);
         passEncoder.draw(lanternObj.vertexCount, 1, 0, 0);
         passEncoder.end();
-    
         device.queue.submit([commandEncoder.finish()]);
+
         requestAnimationFrame(frame);
       }
+      requestAnimationFrame(frame);
 }
 
 CreateTrangle();

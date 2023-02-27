@@ -1,5 +1,9 @@
+@group(0) @binding(0) var<uniform> mvp : mat4x4<f32>;
+
 struct vertexOutput{
     @builtin(position) position : vec4<f32>,
+    @location(0) pos : vec3<f32>,
+    @location(1) uv : vec2<f32>
 }
 
 @vertex
@@ -9,7 +13,9 @@ fn main(@builtin(vertex_index) index : u32 ,
  ) -> vertexOutput {
 
   var a: vertexOutput;
-  a.position = vec4<f32>(position,1.0);
+  a.position = mvp*vec4<f32>(position,1.0);
+  a.pos=position;
+  a.uv=uv;
   
   return a;
 }
