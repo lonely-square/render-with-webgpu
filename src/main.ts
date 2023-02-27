@@ -31,22 +31,48 @@ const CreateTrangle =async () => {
 
     var lanternObj = new objMesh()
     await lanternObj.initialize("./model/lantern/lantern.obj")
+    const texture_1 = new Image()
+    const texture_2 = new Image()
+    texture_1.src = "./model/lantern/tex/000001B95523DFF8.jpg"
+    texture_2.src = "./model/lantern/tex/000001B955240538.jpg"
+    await texture_1.decode()
+    await texture_2.decode()
 
+
+
+    //设置BindGroupLayout
     const piplineGroupLayout = device.createBindGroupLayout({
         entries: [
             {
                 binding: 0,
                 visibility: GPUShaderStage.VERTEX,
                 buffer : {type : 'uniform'}
-            }
+            },
+            {
+                binding: 1,
+                visibility: GPUShaderStage.FRAGMENT,
+                sampler: {
+                    type: "filtering"
+                }
+            },
+            {
+              binding: 2,
+              visibility: GPUShaderStage.FRAGMENT,
+              texture: {
+                sampleType: "float"
+              }
+            },
         ]
 
     });
+
+    //设置深度信息
     const depthTexture = device.createTexture({
         size: [canvas.width, canvas.height],
         format: 'depth24plus',
         usage: GPUTextureUsage.RENDER_ATTACHMENT,
     });
+
 
     const pipeline = device.createRenderPipeline({
         layout: device.createPipelineLayout({bindGroupLayouts:[piplineGroupLayout]}),
@@ -105,7 +131,7 @@ const CreateTrangle =async () => {
     //COPY_DST: data can be copied to the buffer
 
     const descriptor: GPUBufferDescriptor = {
-        size: lanternObj.vertices.byteLength,
+        size: lanternObj.vertices[0].vertex.byteLength,
         usage: usage,
         mappedAtCreation: true // similar to HOST_VISIBLE, allows buffer to be written by the CPU
     };
@@ -113,13 +139,38 @@ const CreateTrangle =async () => {
     buffer = device.createBuffer(descriptor);
 
     //Buffer has been created, now load in the vertices
-    new Float32Array(buffer.getMappedRange()).set(lanternObj.vertices);
+    new Float32Array(buffer.getMappedRange()).set(lanternObj.vertices[0].vertex);
     buffer.unmap();
     }
     const mvpMatrix = device.createBuffer({
         size : 4*4*4,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
+    
+    let cubeTexture: GPUTexture;
+    {
+
+      const imageBitmap = await createImageBitmap(texture_2);
+  
+      cubeTexture = device.createTexture({
+        size: [imageBitmap.width, imageBitmap.height, 1],
+        format: 'rgba8unorm',
+        usage:
+          GPUTextureUsage.TEXTURE_BINDING |
+          GPUTextureUsage.COPY_DST |
+          GPUTextureUsage.RENDER_ATTACHMENT,
+      });
+      device.queue.copyExternalImageToTexture(
+        { source: imageBitmap },
+        { texture: cubeTexture },
+        [imageBitmap.width, imageBitmap.height]
+      );
+    }
+    const sampler = device.createSampler({
+        magFilter: 'linear',
+        minFilter: 'linear',
+      });
+
 
     const uniformBindGroup = device.createBindGroup({
         layout: pipeline.getBindGroupLayout(0),
@@ -129,6 +180,14 @@ const CreateTrangle =async () => {
             resource: {
               buffer: mvpMatrix,
             }
+          },
+          {
+            binding: 1,
+            resource: sampler,
+          },
+          {
+            binding: 2,
+            resource: cubeTexture.createView(),
           },
         ],
       });
@@ -190,7 +249,7 @@ const CreateTrangle =async () => {
         passEncoder.setPipeline(pipeline);
         passEncoder.setBindGroup(0,uniformBindGroup);
         passEncoder.setVertexBuffer(0,buffer);
-        passEncoder.draw(lanternObj.vertexCount, 1, 0, 0);
+        passEncoder.draw(lanternObj.vertices[0].vertexCount, 1, 0, 0);
         passEncoder.end();
         device.queue.submit([commandEncoder.finish()]);
 

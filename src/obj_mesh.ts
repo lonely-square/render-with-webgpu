@@ -6,22 +6,22 @@ export class objMesh {
     v: vec3[]
     vt: vec2[]
     vn: vec3[]
-    vertices: Float32Array
-    vertexCount: number 
+    vertices: { "uvname": string ,'vertex' : Float32Array,'vertexCount' :number }[]
+     
 
     constructor(){
         
         this.v=[]
         this.vn=[]
         this.vt=[]  
-        this.vertices = new Float32Array()
-        this.vertexCount = 0
+        this.vertices = []
+        
     }
 
     async initialize(url: string){  
-        await this.readFile(url)        
-        this.vertexCount = this.vertices.length /5   //因为坐标3加上贴图2 
-        console.log(this.vertexCount)    
+        await this.readFile(url)       
+        // this.vertexCount = this.vertices.length /5   //因为坐标3加上贴图2 
+           
     }
 
     async readFile(url: string){
@@ -31,6 +31,8 @@ export class objMesh {
         const blob: Blob = await response.blob()
         const fileContents = (await blob.text())
         const lines = fileContents.split("\n")
+        let mtlCount=0
+        let mtlName: string
 
         lines.forEach(
             (line) => {
@@ -43,13 +45,24 @@ export class objMesh {
                 else if (line[0] == "v" && line[1] == "n") {
                     this.read_normal_data(line);
                 }
-                else if (line[0] == "f") {
+                else if (line.slice(0,6) == "usemtl") {
+                    if (mtlCount !=0){
+                        
+                        const mtl= line.split("/");
+                        mtlName=mtl[1];
+                        const a={ "uvname":mtlName ,"vertex": new Float32Array(result),"vertexCount":0};
+                        a.vertexCount = a.vertex.length /5;
+                        this.vertices.push(a);
+                    }
+                    mtlCount++;
+                }
+                else if(line[0] == "f"){
                     this.read_face_data(line, result);
                 }
             }
         )
 
-        this.vertices = new Float32Array(result)
+        
     }
 
     read_vertex_data(line: string) {
@@ -119,6 +132,6 @@ export class objMesh {
         result.push(v[1]);
         result.push(v[2]);
         result.push(vt[0]);
-        result.push(vt[1]);
+        result.push(1-vt[1]);  //webGPU坐标系y轴和普通的相反
     }
 }
