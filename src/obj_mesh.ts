@@ -53,7 +53,7 @@ export class objMesh {
                         result = [];
                     }
                     const mtl = line.split(" ");
-                    mtlName = mtl[1];
+                    mtlName = mtl[1].replace(/\r/g,"");
                     mtlCount++;
                 }
                 else if (line[0] == "f") {

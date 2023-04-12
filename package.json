@@ -1,5 +1,5 @@
 {
-  "name": "webgpu01",
+  "name": "render-with-webgpu",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",

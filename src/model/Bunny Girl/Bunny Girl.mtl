@@ -1,0 +1,79 @@
+# Blender MTL File: 'untitled3.blend'
+# Material Count: 6
+
+newmtl S_9000_FC_eyeshade_mat
+Ns 10.717731
+Ka 1.000000 1.000000 1.000000
+Kd 0.900000 0.300000 0.300000
+Ks 1.000000 1.000000 1.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 3
+map_Kd odin-magic-parade\\textures\\S_9000_eyeshade_col.tga.png
+map_d odin-magic-parade\\textures\\S_9000_eyeshade_col.tga.png
+
+newmtl S_9000_FC_mat
+Ns 10.717731
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 1.000000 1.000000 1.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 3
+map_Bump odin-magic-parade\\textures\\s_9000_FC_nml.tga.png
+map_Kd odin-magic-parade\\textures\\s_9000_FC_col.tga.png
+map_Ks odin-magic-parade\\textures\\S_9000_FC_mask.tga.png
+
+newmtl S_9000_HR
+Ns 10.717731
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 1.000000 1.000000 1.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 3
+map_Bump odin-magic-parade\\textures\\S_9000_HR_nml.tga.png
+map_Kd odin-magic-parade\\textures\\S_9000_HR_col2.tga.png
+map_Ks odin-magic-parade\\textures\\S_9000_HR_mask.tga.png
+
+newmtl S_9008_HD
+Ns 10.717731
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 1.000000 1.000000 1.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 3
+map_Bump odin-magic-parade\\textures\\S_9009_HD_nml.tga.png
+map_Kd odin-magic-parade\\textures\\S_9009_HD_col2.tga.png
+map_Ks odin-magic-parade\\textures\\S_9009_HD_mask.tga.png
+
+newmtl S_9009_BD
+Ns 10.717731
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 1.000000 1.000000 1.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 3
+map_Bump odin-magic-parade\\textures\\S_9009_BD_nml.tga.png
+map_Kd odin-magic-parade\\textures\\S_9009_BD_col.tga.png
+map_Ks odin-magic-parade\\textures\\S_9009_BD_mask.tga.png
+
+newmtl S_9009_PART
+Ns 10.717731
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 1.000000 1.000000 1.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 3
+map_Bump odin-magic-parade\\textures\\S_9009_PART_nml.tga.png
+map_Kd odin-magic-parade\\textures\\S_9009_PART_col.tga.png
+map_Ks odin-magic-parade\\textures\\S_9009_PART_mask.tga.png

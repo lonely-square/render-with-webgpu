@@ -3,9 +3,10 @@ import fragmentShader from './shader/fragment_01.wgsl';
 import { objMesh } from './obj_mesh';
 import { vec3 } from 'gl-matrix';
 import { getTransformationMatrix } from './matrix'
-import { coords } from './interface';
+import { coords, obj } from './interface';
+import { control } from './tools'
 
-const createObj = async (modelUrl: string, texUrl: string[]) => {
+const createObj = async (modelUrl: string, texUrl: string[]): Promise<obj> => {
 
     const canvas = document.getElementById('canvas-webgpu') as HTMLCanvasElement;
     const adapter = await navigator.gpu?.requestAdapter() as GPUAdapter;
@@ -35,7 +36,18 @@ const createObj = async (modelUrl: string, texUrl: string[]) => {
     //将lanternObj数据与传入贴图数据对齐
     texUrl.forEach((url) => {
         const name = url.split('/').pop()
-        const verticesTemp = lanternObj.vertices.filter(obj => `${obj.uvname}.jpg` === name)[0];
+
+
+        let verticesTemp
+        if (name?.includes(".tga.png")) {
+            
+            verticesTemp = lanternObj.vertices.filter(obj => {
+                console.log(name,`${obj.uvname}.tga.png`,`${obj.uvname}.tga.png` === name);
+                return `${obj.uvname}.tga.png` === name
+            })[0]
+        } else {
+            verticesTemp = lanternObj.vertices.filter(obj => `${obj.uvname}.jpg` === name)[0]
+        }
         lanternObj.vertices.push(verticesTemp)
 
     })
@@ -50,6 +62,7 @@ const createObj = async (modelUrl: string, texUrl: string[]) => {
         const texture = new Image()
         texture.src = url
         await texture.decode()
+
         const imageBitmap = await createImageBitmap(texture);
         const cubeTexture = device.createTexture({
             size: [imageBitmap.width, imageBitmap.height, 1],
@@ -238,7 +251,7 @@ const createObj = async (modelUrl: string, texUrl: string[]) => {
             transformationMatrix.byteOffset,
             transformationMatrix.byteLength
         );
-        
+
         const commandEncoder = device.createCommandEncoder();
         const textureView = context.getCurrentTexture().createView();
 
@@ -272,17 +285,100 @@ const createObj = async (modelUrl: string, texUrl: string[]) => {
         device.queue.submit([commandEncoder.finish()]);
     }
 
+    return { position, rotation, scale }
 }
 
+const initPage = (lanternObj: obj) => {
 
+    // 初始化操作
+    const canvas: HTMLElement | null = document.getElementById("canvas-webgpu")
+    const timeout = 30
+    const dist = 0.1
+    const ctrl = control();
+    function upMed() {
+        lanternObj.position.y -= dist
+    }
+    function downMed() {
+        lanternObj.position.y += dist
+    }
+    function rightMed() {
+        lanternObj.position.x -= dist
+    }
+    function leftMed() {
+        lanternObj.position.x += dist
+    }
+    function innerMed() {
+        lanternObj.position.z += dist
+    }
+    function outMed() {
+        lanternObj.position.z -= dist
+    }
+
+    canvas?.addEventListener('keydown', function (e) {
+
+        if (e.code === 'KeyS') {
+            ctrl.throttle(downMed, timeout)
+        }
+        if (e.code === 'KeyA') {
+            ctrl.throttle(leftMed, timeout)
+        }
+        if (e.code === 'KeyW') {
+            ctrl.throttle(upMed, timeout)
+        }
+        if (e.code === 'KeyD') {
+            ctrl.throttle(rightMed, timeout)
+        }
+    });
+    canvas?.addEventListener('wheel', (e) => {
+
+        if (e.deltaY < 0) {
+            ctrl.throttle(innerMed, timeout)
+        }
+        if (e.deltaY > 0) {
+            ctrl.throttle(outMed, timeout)
+        }
+    })
+
+}
 const main = async () => {
 
     if (!navigator.gpu) {
         throw ('Your current browser does not support WebGPU!');
     }
 
-    await createObj("./model/lantern/lantern.obj", ["./model/lantern/tex/000001B95523DFF8.jpg", "./model/lantern/tex/000001B955240538.jpg"]);
+    const objSelect = document.getElementById("objSelect") as HTMLSelectElement
+    objSelect?.addEventListener("change", e => initObj(objSelect))
 
+    const lanternObj = await createObj("./model/lantern/lantern.obj", ["./model/lantern/tex/000001B95523DFF8.jpg", "./model/lantern/tex/000001B955240538.jpg"]);
+
+    initPage(lanternObj)
+}
+
+async function initObj(Select: HTMLSelectElement) {
+    console.log(Select.value)
+    if (Select.value === "lantern") {
+        const lanternObj = await createObj("./model/lantern/lantern.obj", ["./model/lantern/tex/000001B95523DFF8.jpg", "./model/lantern/tex/000001B955240538.jpg"]);
+    }
+    if (Select.value === "girl") {
+        const lanternObj = await createObj("./model/Bunny Girl/Bunny Girl.obj", [
+            "./model/Bunny Girl/textures/S_9000_eyeshade_col.tga.png",
+            "./model/Bunny Girl/textures/s_9000_FC_col.tga.png",
+            "./model/Bunny Girl/textures/S_9000_FC_mask.tga.png",
+            "./model/Bunny Girl/textures/s_9000_FC_nml.tga.png",
+            "./model/Bunny Girl/textures/S_9000_HR_col2.tga.png",
+            "./model/Bunny Girl/textures/S_9000_HR_mask.tga.png",
+            "./model/Bunny Girl/textures/S_9000_HR_nml.tga.png",
+            "./model/Bunny Girl/textures/S_9009_BD_col.tga.png",
+            "./model/Bunny Girl/textures/S_9009_BD_mask.tga.png",
+            "./model/Bunny Girl/textures/S_9009_BD_nml.tga.png",
+            "./model/Bunny Girl/textures/S_9009_HD_col2.tga.png",
+            "./model/Bunny Girl/textures/S_9009_HD_mask.tga.png",
+            "./model/Bunny Girl/textures/S_9009_HD_nml.tga.png",
+            "./model/Bunny Girl/textures/S_9009_PART_col.tga.png",
+            "./model/Bunny Girl/textures/S_9009_PART_mask.tga.png",
+            "./model/Bunny Girl/textures/S_9009_PART_nml.tga.png"
+        ]);
+    }
 }
 
 main();
