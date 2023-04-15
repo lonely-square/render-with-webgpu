@@ -4,4 +4,6 @@
 @fragment
 fn main(@location(0) pos : vec3<f32>,@location(1) uv: vec2<f32>) -> @location(0) vec4<f32> {
   return textureSample(myTexture, mySampler, uv);
+  // vec4(0,1,1,1);
+  // textureSample(myTexture, mySampler, uv);
 }

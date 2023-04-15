@@ -6,22 +6,19 @@ export class objMesh {
     v: vec3[]
     vt: vec2[]
     vn: vec3[]
-    vertices: { "uvname": string, 'vertex': Float32Array, 'vertexCount': number }[]
+    vertices: { "mtlname": string, 'vertex': Float32Array, 'vertexCount': number }[]
 
 
     constructor() {
-
         this.v = []
         this.vn = []
         this.vt = []
         this.vertices = []
-
     }
 
     async initialize(url: string) {
         await this.readFile(url)
         // this.vertexCount = this.vertices.length /5   //因为坐标3加上贴图2 
-
     }
 
     async readFile(url: string) {
@@ -47,13 +44,13 @@ export class objMesh {
                 }
                 else if (line.slice(0, 6) == "usemtl") {
                     if (mtlCount != 0) {
-                        const a = { "uvname": mtlName, "vertex": new Float32Array(result), "vertexCount": 0 };
+                        const a = { "mtlname": mtlName, "vertex": new Float32Array(result), "vertexCount": 0 };
                         a.vertexCount = a.vertex.length / 5;
                         this.vertices.push(a);
                         result = [];
                     }
                     const mtl = line.split(" ");
-                    mtlName = mtl[1].replace(/\r/g,"");
+                    mtlName = mtl[1].replace(/\r/g, "");
                     mtlCount++;
                 }
                 else if (line[0] == "f") {
@@ -62,7 +59,7 @@ export class objMesh {
             }
         )
 
-        const a = { "uvname": mtlName, "vertex": new Float32Array(result), "vertexCount": 0 };
+        const a = { "mtlname": mtlName, "vertex": new Float32Array(result), "vertexCount": 0 };
         a.vertexCount = a.vertex.length / 5;
         this.vertices.push(a);
 

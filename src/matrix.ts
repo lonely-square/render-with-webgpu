@@ -4,7 +4,7 @@ import { mat4, vec3 } from 'gl-matrix';
 export function getTransformationMatrix(aspect: number, position: vec3, rotation: vec3, scale: vec3): Float32Array {
 
   const projectionMatrix = mat4.create();
-  mat4.perspective(projectionMatrix, Math.PI / 2, aspect, 0.0001, 2.0);
+  mat4.perspective(projectionMatrix, Math.PI/2 , aspect, 0.001, 10000000000000.0);
   const viewMatrix = mat4.create();
   mat4.translate(viewMatrix, viewMatrix, vec3.fromValues(position[0], position[1], position[2]));
   mat4.rotateX(viewMatrix, viewMatrix, rotation[0])

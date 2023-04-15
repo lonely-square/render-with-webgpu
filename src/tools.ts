@@ -1,4 +1,4 @@
-export function control(): {
+export function tools(): {
     debounce: (fn: Function, timeout: number, ...args: any[]) => void;
     throttle: (fn: Function, timeout: number, ...args: any[]) => void;
   } {
