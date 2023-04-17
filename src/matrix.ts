@@ -1,19 +1,39 @@
-//
+
 import { mat4, vec3 } from 'gl-matrix';
+import { sceneConfig } from './interface';
 
-export function getTransformationMatrix(aspect: number, position: vec3, rotation: vec3, scale: vec3): Float32Array {
+export function getTransformationMatrix(aspect: number, sceneConfig:sceneConfig): Float32Array {
 
+  let position = sceneConfig.objConfig.position
+  let rotation = sceneConfig.objConfig.rotation
+  let scale = sceneConfig.objConfig.scale
+
+  let camPosition = sceneConfig.cameraConfig.position
+  let camRotation = sceneConfig.cameraConfig.rotation
+
+ //变世界坐标
+  const modelMatrix = mat4.create();
+  mat4.translate(modelMatrix, modelMatrix, vec3.fromValues(position.x, position.y, position.z));
+  mat4.rotateX(modelMatrix, modelMatrix, rotation.x)
+  mat4.rotateY(modelMatrix, modelMatrix, rotation.y)
+  mat4.rotateZ(modelMatrix, modelMatrix, rotation.z)
+  mat4.scale(modelMatrix, modelMatrix, vec3.fromValues(scale.x, scale.y, scale.z));
+
+//变摄像机坐标
+  const cameraMatrix = mat4.create();
+  mat4.translate(cameraMatrix, cameraMatrix, vec3.fromValues(-camPosition.x, -camPosition.y, -camPosition.z));
+  mat4.rotateX(cameraMatrix,cameraMatrix, -camRotation.x)
+  mat4.rotateY(cameraMatrix, cameraMatrix, -camRotation.y)
+  mat4.rotateZ(cameraMatrix, cameraMatrix, -camRotation.z)
+
+//变裁剪坐标
   const projectionMatrix = mat4.create();
-  mat4.perspective(projectionMatrix, Math.PI/2 , aspect, 0.001, 10000000000000.0);
-  const viewMatrix = mat4.create();
-  mat4.translate(viewMatrix, viewMatrix, vec3.fromValues(position[0], position[1], position[2]));
-  mat4.rotateX(viewMatrix, viewMatrix, rotation[0])
-  mat4.rotateY(viewMatrix, viewMatrix, rotation[1])
-  mat4.rotateZ(viewMatrix, viewMatrix, rotation[2])
-  mat4.scale(viewMatrix, viewMatrix, vec3.fromValues(scale[0], scale[1], scale[2]));
+  mat4.perspective(projectionMatrix, Math.PI/2 , aspect, 0.001, 20.0);
+
 
   const modelViewProjectionMatrix = mat4.create();
-  mat4.multiply(modelViewProjectionMatrix, projectionMatrix, viewMatrix);
+  mat4.multiply(modelViewProjectionMatrix, cameraMatrix, modelMatrix);
+  mat4.multiply(modelViewProjectionMatrix, projectionMatrix, modelViewProjectionMatrix);
 
   return modelViewProjectionMatrix as Float32Array;
 }

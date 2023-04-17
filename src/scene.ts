@@ -47,13 +47,19 @@ export abstract class scene implements select {
                     x: 0,
                     y: 0,
                     z: 0
-                }
-            },
-            lightConfig: {
-                position: {
+                },
+                rotation: {
                     x: 0,
                     y: 0,
                     z: 0
+                }
+            },
+            lightConfig: {
+                pattern:"全局光照",
+                position: {
+                    x: 0,
+                    y: 0,
+                    z: 100
                 }
             }
         }
@@ -89,13 +95,19 @@ export abstract class scene implements select {
                     x: 0,
                     y: 0,
                     z: 0
-                }
-            },
-            lightConfig: {
-                position: {
+                },
+                rotation: {
                     x: 0,
                     y: 0,
                     z: 0
+                }
+            },
+            lightConfig: {
+                pattern:"全局光照",
+                position: {
+                    x: 0,
+                    y: 0,
+                    z: 100
                 }
             }
         }

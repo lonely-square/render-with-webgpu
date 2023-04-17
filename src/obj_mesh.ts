@@ -2,9 +2,17 @@ import { vec2, vec3 } from 'gl-matrix'
 //模型类，存储模型的各种坐标信息
 export class objMesh {
 
-
+    /**
+     * 顶点
+     */
     v: vec3[]
+    /**
+     * 贴图
+     */
     vt: vec2[]
+    /**
+     * 法向量
+     */
     vn: vec3[]
     vertices: { "mtlname": string, 'vertex': Float32Array, 'vertexCount': number }[]
 
@@ -45,7 +53,7 @@ export class objMesh {
                 else if (line.slice(0, 6) == "usemtl") {
                     if (mtlCount != 0) {
                         const a = { "mtlname": mtlName, "vertex": new Float32Array(result), "vertexCount": 0 };
-                        a.vertexCount = a.vertex.length / 5;
+                        a.vertexCount = a.vertex.length / 8;
                         this.vertices.push(a);
                         result = [];
                     }
@@ -60,7 +68,7 @@ export class objMesh {
         )
 
         const a = { "mtlname": mtlName, "vertex": new Float32Array(result), "vertexCount": 0 };
-        a.vertexCount = a.vertex.length / 5;
+        a.vertexCount = a.vertex.length / 8;
         this.vertices.push(a);
 
     }
@@ -127,11 +135,15 @@ export class objMesh {
         const v_vt_vn = vertex_description.split("/");
         const v = this.v[Number(v_vt_vn[0]).valueOf() - 1];
         const vt = this.vt[Number(v_vt_vn[1]).valueOf() - 1];
+        const vn = this.vn[Number(v_vt_vn[2]).valueOf() - 1];
         //ignoring normals for now
         result.push(v[0]);
         result.push(v[1]);
         result.push(v[2]);
         result.push(vt[0]);
         result.push(1 - vt[1]);  //webGPU坐标系y轴和普通的相反
+        result.push(vn[0]);
+        result.push(vn[1]);
+        result.push(vn[2]);
     }
 }

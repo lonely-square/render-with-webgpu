@@ -1,10 +1,9 @@
+import { vec3 } from "gl-matrix";
+import { mtlCongfig } from "./interface";
+
 export class mtl {
 
-    mtl: Map<string,  {
-        map_Kd: string,
-        map_Bump?: string,
-        map_Ks?: string
-    }>=new Map
+    mtl: Map<string,mtlCongfig>=new Map
 
 
     async initialize(url: string) {
@@ -31,9 +30,69 @@ export class mtl {
                     mtlName=line.split(" ")[1]
                     mtlTemp= {}
                 }
-                else if (line.slice(0, 6) == "map_Kd") {
+                else if (line.slice(0, 6) === "map_Kd") {
                     let url=line.split(" ")[1].split(/\/|\\\\/)
                     mtlTemp.map_Kd=url[url.length-1]
+                }
+                else if (line.slice(0, 6) === "map_Ks") {
+                    let url=line.split(" ")[1].split(/\/|\\\\/)
+                    mtlTemp.map_Ks=url[url.length-1]
+                }
+                else if (line.slice(0, 8) == "map_Bump") {
+                    let url=line.split(" ")[1].split(/\/|\\\\/)
+                    mtlTemp.map_Bump=url[url.length-1]
+                }
+                else if (line.slice(0, 2) === "Ns") {
+                    let temp=Number( line.split(" ")[1] )
+                    mtlTemp.Ns=temp
+                }
+                else if (line.slice(0, 1) === "d") {
+                    let temp=Number( line.split(" ")[1] )
+                    mtlTemp.d=temp
+                }
+                else if (line.slice(0, 2) === "Ni") {
+                    let temp=Number( line.split(" ")[1] )
+                    mtlTemp.Ni=temp
+                }
+                else if (line.slice(0, 5) === "illum") {
+                    let temp=Number( line.split(" ")[1] )
+                    mtlTemp.illum=temp
+                }
+                else if (line.slice(0, 2) === "Ka") {
+                    let temp=line.split(" ")
+                    let comp:vec3 =[
+                        Number(temp[1]),
+                        Number(temp[2]),
+                        Number(temp[3])
+                    ]
+                    mtlTemp.Ka=comp
+                }
+                else if (line.slice(0, 2) === "Kd") {
+                    let temp=line.split(" ")
+                    let comp:vec3 =[
+                        Number(temp[1]),
+                        Number(temp[2]),
+                        Number(temp[3])
+                    ]
+                    mtlTemp.Kd=comp
+                }
+                else if (line.slice(0, 2) === "Ks") {
+                    let temp=line.split(" ")
+                    let comp:vec3 =[
+                        Number(temp[1]),
+                        Number(temp[2]),
+                        Number(temp[3])
+                    ]
+                    mtlTemp.Ks=comp
+                }
+                else if (line.slice(0, 2) === "Ke") {
+                    let temp=line.split(" ")
+                    let comp:vec3 =[
+                        Number(temp[1]),
+                        Number(temp[2]),
+                        Number(temp[3])
+                    ]
+                    mtlTemp.Ke=comp
                 }
             }
         )
