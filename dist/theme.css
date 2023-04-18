@@ -1,0 +1,9 @@
+.flexWrap{
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+}
+
+.flexWrap .box{
+    flex:1;
+}
