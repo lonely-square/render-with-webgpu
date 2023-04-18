@@ -27,7 +27,7 @@ export class mtl {
                         this.mtl.set(mtlName,mtlTemp);
                         result = [];
                     }
-                    mtlName=line.split(" ")[1]
+                    mtlName=line.split(" ")[1].replace(/\r/g, "")
                     mtlTemp= {}
                 }
                 else if (line.slice(0, 6) === "map_Kd") {
