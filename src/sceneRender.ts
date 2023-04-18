@@ -516,6 +516,19 @@ export abstract class sceneRender extends scene {
         console.log(that.mtl.mtl)
         if ( (that.mtl.mtl.get(vertices.mtlname) as any).map_d ) 
             {
+                const blendState: GPUBlendState = {
+                    color: {
+                      srcFactor: "src-alpha",
+                      dstFactor: "one-minus-src-alpha",
+                      operation: "add"
+                    },
+                    alpha: {
+                      srcFactor: "src-alpha",
+                      dstFactor: "one-minus-src-alpha",
+                      operation: "add"
+                    }
+                  };
+
                 res = that.device.createRenderPipeline({
                     layout: that.device.createPipelineLayout({ bindGroupLayouts: [that.piplineGroupLayout] }),
                     vertex: {
@@ -554,6 +567,7 @@ export abstract class sceneRender extends scene {
                         targets: [
                             {
                                 format: that.presentationFormat,
+                                blend:blendState
                             },
                         ],
                     },
