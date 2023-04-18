@@ -16,6 +16,11 @@ const main = async () => {
     const device = await adapter?.requestDevice() as GPUDevice;
     const objSelect = document.getElementById("objSelect") as HTMLSelectElement
 
+    
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    canvas.width = canvas.clientWidth * devicePixelRatio;
+    canvas.height = canvas.clientHeight * devicePixelRatio;
+
     let switchScene:select = new sceneGUI(device,canvas)
     objSelect?.addEventListener("change", e => switchScene.switchScene(objSelect.value))
 

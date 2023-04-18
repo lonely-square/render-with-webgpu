@@ -127,9 +127,6 @@ export abstract class sceneRender extends scene {
 
 
 
-        const devicePixelRatio = window.devicePixelRatio || 1;
-        that.canvas.width = that.canvas.clientWidth * devicePixelRatio;
-        that.canvas.height = that.canvas.clientHeight * devicePixelRatio;
         that.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
 
         that.context.configure({
