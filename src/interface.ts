@@ -54,6 +54,7 @@ export type mtlCongfig = {
      * /高光反射贴图，用于增强物体反光效果。
      */
     map_Ks?: string
+    map_d?: string
     /**
      * 高光反射指数，一般在0-1000之间，数值越大则高光越集中，反之越模糊。
      */

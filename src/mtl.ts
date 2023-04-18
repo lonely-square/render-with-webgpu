@@ -42,6 +42,10 @@ export class mtl {
                     let url=line.split(" ")[1].split(/\/|\\\\/)
                     mtlTemp.map_Bump=url[url.length-1]
                 }
+                else if (line.slice(0, 5) == "map_d") {
+                    let url=line.split(" ")[1].split(/\/|\\\\/)
+                    mtlTemp.map_d=url[url.length-1]
+                }
                 else if (line.slice(0, 2) === "Ns") {
                     let temp=Number( line.split(" ")[1] )
                     mtlTemp.Ns=temp
@@ -94,6 +98,7 @@ export class mtl {
                     ]
                     mtlTemp.Ke=comp
                 }
+                
             }
         )
         this.mtl.set(mtlName,mtlTemp)

@@ -29,7 +29,7 @@ export abstract class scene implements select {
                 position: {
                     x: 0,
                     y: 0,
-                    z: -1
+                    z: -2
                 },
                 scale: {
                     x: 1,
@@ -45,8 +45,8 @@ export abstract class scene implements select {
             cameraConfig: {
                 position: {
                     x: 0,
-                    y: 0,
-                    z: 0
+                    y: 0.84,
+                    z: -1.92
                 },
                 rotation: {
                     x: 0,
@@ -59,7 +59,7 @@ export abstract class scene implements select {
                 position: {
                     x: 0,
                     y: 0,
-                    z: 100
+                    z: -100
                 }
             }
         }
@@ -77,7 +77,7 @@ export abstract class scene implements select {
                 position: {
                     x: 0,
                     y: 0,
-                    z: -1
+                    z: -2
                 },
                 scale: {
                     x: 1,
@@ -93,8 +93,8 @@ export abstract class scene implements select {
             cameraConfig: {
                 position: {
                     x: 0,
-                    y: 0,
-                    z: 0
+                    y: 0.84,
+                    z: -1.92
                 },
                 rotation: {
                     x: 0,
@@ -107,7 +107,7 @@ export abstract class scene implements select {
                 position: {
                     x: 0,
                     y: 0,
-                    z: 100
+                    z: -100
                 }
             }
         }

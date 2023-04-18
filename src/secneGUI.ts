@@ -1,8 +1,12 @@
+import { mat4 } from "gl-matrix";
+import { getTransformationMatrix } from "./matrix";
 import { scene } from "./scene";
 import { sceneRender } from "./sceneRender";
 import { tools } from "./tools";
 import * as dat from 'dat.gui';
 import Stats from 'stats.js'
+import { vec4 } from "gl-matrix";
+import { vec3 } from "gl-matrix";
 
 export class sceneGUI extends sceneRender {
 
@@ -92,33 +96,33 @@ export class sceneGUI extends sceneRender {
 
         folder_1.open()
         let folder_1_1 = folder_1.addFolder("objPosition")
-        folder_1_1.add(this.sceneConfig.objConfig.position as any, "x", undefined, undefined, 0.01).listen
-        folder_1_1.add(this.sceneConfig.objConfig.position as any, "y", undefined, undefined, 0.01).listen
-        folder_1_1.add(this.sceneConfig.objConfig.position as any, "z", undefined, undefined, 0.01).listen
+        folder_1_1.add(this.sceneConfig.objConfig.position as any, "x", undefined, undefined, 0.01)
+        folder_1_1.add(this.sceneConfig.objConfig.position as any, "y", undefined, undefined, 0.01)
+        folder_1_1.add(this.sceneConfig.objConfig.position as any, "z", undefined, undefined, 0.01)
 
         let folder_1_2 = folder_1.addFolder("objRotation")
-        folder_1_2.add(this.sceneConfig.objConfig.rotation as any, "x", undefined, undefined, 0.01).listen
-        folder_1_2.add(this.sceneConfig.objConfig.rotation as any, "y", undefined, undefined, 0.01).listen
-        folder_1_2.add(this.sceneConfig.objConfig.rotation as any, "z", undefined, undefined, 0.01).listen
+        folder_1_2.add(this.sceneConfig.objConfig.rotation as any, "x", undefined, undefined, 0.01)
+        folder_1_2.add(this.sceneConfig.objConfig.rotation as any, "y", undefined, undefined, 0.01)
+        folder_1_2.add(this.sceneConfig.objConfig.rotation as any, "z", undefined, undefined, 0.01)
 
         let folder_1_3 = folder_1.addFolder("objScale")
-        folder_1_3.add(this.sceneConfig.objConfig.scale as any, "x", undefined, undefined, 0.01).listen
-        folder_1_3.add(this.sceneConfig.objConfig.scale as any, "y", undefined, undefined, 0.01).listen
-        folder_1_3.add(this.sceneConfig.objConfig.scale as any, "z", undefined, undefined, 0.01).listen
+        folder_1_3.add(this.sceneConfig.objConfig.scale as any, "x", undefined, undefined, 0.01)
+        folder_1_3.add(this.sceneConfig.objConfig.scale as any, "y", undefined, undefined, 0.01)
+        folder_1_3.add(this.sceneConfig.objConfig.scale as any, "z", undefined, undefined, 0.01)
 
 
         let folder_2 = that.datGUi.addFolder("camera")
 
         folder_2.open()
         let folder_2_1 = folder_2.addFolder("camPosition")
-        folder_2_1.add(this.sceneConfig.cameraConfig.position as any, "x", undefined, undefined, 0.01).listen
-        folder_2_1.add(this.sceneConfig.cameraConfig.position as any, "y", undefined, undefined, 0.01).listen
-        folder_2_1.add(this.sceneConfig.cameraConfig.position as any, "z", undefined, undefined, 0.01).listen
+        folder_2_1.add(this.sceneConfig.cameraConfig.position as any, "x", undefined, undefined, 0.01).listen()
+        folder_2_1.add(this.sceneConfig.cameraConfig.position as any, "y", undefined, undefined, 0.01).listen()
+        folder_2_1.add(this.sceneConfig.cameraConfig.position as any, "z", undefined, undefined, 0.01).listen()
 
         let folder_2_2 = folder_2.addFolder("camRotation")
-        folder_2_2.add(this.sceneConfig.cameraConfig.rotation as any, "x", undefined, undefined, 0.01).listen
-        folder_2_2.add(this.sceneConfig.cameraConfig.rotation as any, "y", undefined, undefined, 0.01).listen
-        folder_2_2.add(this.sceneConfig.cameraConfig.rotation as any, "z", undefined, undefined, 0.01).listen
+        folder_2_2.add(this.sceneConfig.cameraConfig.rotation as any, "x", undefined, undefined, 0.01).listen()
+        folder_2_2.add(this.sceneConfig.cameraConfig.rotation as any, "y", undefined, undefined, 0.01).listen()
+        folder_2_2.add(this.sceneConfig.cameraConfig.rotation as any, "z", undefined, undefined, 0.01).listen()
 
         let folder_3 = that.datGUi.addFolder("light")
 
@@ -136,56 +140,59 @@ export class sceneGUI extends sceneRender {
             }
         })
         let folder_3_1 = folder_3.addFolder("lightPosition")
-        folder_3_1.add(this.sceneConfig.lightConfig.position as any, "x", undefined, undefined, 0.01).listen
-        folder_3_1.add(this.sceneConfig.lightConfig.position as any, "y", undefined, undefined, 0.01).listen
-        folder_3_1.add(this.sceneConfig.lightConfig.position as any, "z", undefined, undefined, 0.01).listen
+        folder_3_1.add(this.sceneConfig.lightConfig.position as any, "x", undefined, undefined, 10).listen
+        folder_3_1.add(this.sceneConfig.lightConfig.position as any, "y", undefined, undefined, 10).listen
+        folder_3_1.add(this.sceneConfig.lightConfig.position as any, "z", undefined, undefined, 10).listen
 
 
 
         const timeout = 30
-        const dist = 0.1
+
+        function a(dist:vec3){
+
+
+            let rotation = that.sceneConfig.cameraConfig.rotation
+            const r = mat4.create();
+            mat4.rotateX(r, r, rotation.x)
+            mat4.rotateY(r, r, rotation.y)
+            mat4.rotateZ(r, r, rotation.z)
+            mat4.translate(r, r, dist);
+    
+            return [r[12],r[13],r[14]]
+        }
+
+        let dist
         const ctrl = tools();
-        function upMed() {
-            that.sceneConfig.cameraConfig.position.y += dist
-        }
-        function downMed() {
-            that.sceneConfig.cameraConfig.position.y -= dist
-        }
-        function rightMed() {
-            that.sceneConfig.cameraConfig.position.x += dist
-        }
-        function leftMed() {
-            that.sceneConfig.cameraConfig.position.x -= dist
-        }
-        function innerMed() {
-            that.sceneConfig.cameraConfig.position.z -= dist
-        }
-        function outMed() {
-            that.sceneConfig.cameraConfig.position.z += dist
+
+        function Med(v:vec3) {
+            dist = a(v)
+            that.sceneConfig.cameraConfig.position.x += dist[0]
+            that.sceneConfig.cameraConfig.position.y += dist[1]
+            that.sceneConfig.cameraConfig.position.z += dist[2]
         }
 
         this.canvas?.addEventListener('keydown', function (e) {
 
             if (e.code === 'KeyS') {
-                ctrl.throttle(downMed, timeout)
+                ctrl.throttle(Med,timeout, [0.0,-0.03,0.0])
             }
             if (e.code === 'KeyA') {
-                ctrl.throttle(leftMed, timeout)
+                ctrl.throttle(Med, timeout,[-0.03,0.0,0.0])
             }
             if (e.code === 'KeyW') {
-                ctrl.throttle(upMed, timeout)
+                ctrl.throttle(Med, timeout,[0.0,0.03,0.0])
             }
             if (e.code === 'KeyD') {
-                ctrl.throttle(rightMed, timeout)
+                ctrl.throttle(Med, timeout,[0.03,0.0,0.0])
             }
         });
         this.canvas?.addEventListener('wheel', (e) => {
 
             if (e.deltaY < 0) {
-                ctrl.throttle(innerMed, timeout)
+                ctrl.throttle(Med, timeout,[0.0,0.0,-0.03])
             }
             if (e.deltaY > 0) {
-                ctrl.throttle(outMed, timeout)
+                ctrl.throttle(Med, timeout,[0.0,0.0,0.03])
             }
         })
     }
