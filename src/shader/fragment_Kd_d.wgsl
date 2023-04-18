@@ -52,7 +52,7 @@ fn main(@location(0) pos: vec3<f32>,
 
     
 
-    let res=d;
+    let res=saturate(a*kd);
 
-    return kd;
+    return res;
 }

@@ -32,19 +32,19 @@ export class mtl {
                 }
                 else if (line.slice(0, 6) === "map_Kd") {
                     let url=line.split(" ")[1].split(/\/|\\\\/)
-                    mtlTemp.map_Kd=url[url.length-1]
+                    mtlTemp.map_Kd=url[url.length-1].replace(/\r/g, "")
                 }
                 else if (line.slice(0, 6) === "map_Ks") {
                     let url=line.split(" ")[1].split(/\/|\\\\/)
-                    mtlTemp.map_Ks=url[url.length-1]
+                    mtlTemp.map_Ks=url[url.length-1].replace(/\r/g, "")
                 }
                 else if (line.slice(0, 8) == "map_Bump") {
                     let url=line.split(" ")[1].split(/\/|\\\\/)
-                    mtlTemp.map_Bump=url[url.length-1]
+                    mtlTemp.map_Bump=url[url.length-1].replace(/\r/g, "")
                 }
                 else if (line.slice(0, 5) == "map_d") {
                     let url=line.split(" ")[1].split(/\/|\\\\/)
-                    mtlTemp.map_d=url[url.length-1]
+                    mtlTemp.map_d=url[url.length-1].replace(/\r/g, "")
                 }
                 else if (line.slice(0, 2) === "Ns") {
                     let temp=Number( line.split(" ")[1] )
