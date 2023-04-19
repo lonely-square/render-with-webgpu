@@ -1,11 +1,9 @@
 import { mat4 } from "gl-matrix";
-import { getTransformationMatrix } from "./matrix";
 import { scene } from "./scene";
 import { sceneRender } from "./sceneRender";
 import { tools } from "./tools";
 import * as dat from 'dat.gui';
 import Stats from 'stats.js'
-import { vec4 } from "gl-matrix";
 import { vec3 } from "gl-matrix";
 
 export class sceneGUI extends sceneRender {
@@ -146,7 +144,7 @@ export class sceneGUI extends sceneRender {
 
 
 
-        const timeout = 30
+        const timeout = 20
 
         function a(dist:vec3){
 

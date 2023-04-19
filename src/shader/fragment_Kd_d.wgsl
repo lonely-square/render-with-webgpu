@@ -46,9 +46,9 @@ fn main(@location(0) pos: vec3<f32>,
     let reflection_dir =normalize(reflect(normalize(lightDirection), n));
   
     //a漫反射角度系数
-    let a=dot(vec4<f32>(normalize(lightDirection),1.0),rotationMatrix*vec4<f32>(n,1.0))-1;
+    let a=dot(vec4<f32>(-normalize(lightDirection),1.0),rotationMatrix*vec4<f32>(n,1.0))-1;
     //b镜面反射角度系数
-    let b= dot(reflection_dir,normalize(cameraPos-pos));
+    // let b= dot(reflection_dir,normalize(cameraPos-pos));
 
     
 

@@ -4,9 +4,8 @@ import vertexShader from './shader/vertex_01.wgsl';
 import fragmentShader_Kd_Ks_bump from './shader/fragment_Kd_Ks_Bump.wgsl';
 import fragmentShader_Kd from './shader/fragment_Kd.wgsl';
 import fragmentShader_Kd_d from './shader/fragment_Kd_d.wgsl';
-import { coords } from "./interface";
 import { vec3 } from 'gl-matrix';
-import { freemem } from "os";
+
 
 
 export abstract class sceneRender extends scene {
@@ -124,9 +123,6 @@ export abstract class sceneRender extends scene {
         });
 
 
-
-
-
         that.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
 
         that.context.configure({
@@ -134,8 +130,6 @@ export abstract class sceneRender extends scene {
             format: that.presentationFormat,
             alphaMode: 'opaque',
         });
-
-
 
 
 

@@ -1,3 +1,7 @@
+/**
+ * 节流，防抖函数
+ * @returns [防抖,节流]
+ */
 export function tools(): {
     debounce: (fn: Function, timeout: number, ...args: any[]) => void;
     throttle: (fn: Function, timeout: number, ...args: any[]) => void;
