@@ -38,6 +38,8 @@ fn main(
     let kd = textureSample(kdTexture, mySampler, uv);
     let bump = textureSample(bumpTexture, mySampler, uv);
     let ks = textureSample(ksTexture, mySampler, uv);
+    let d = textureSample(dTexture, mySampler, uv);
+
 
     //世界坐标的法线
     let n1=rotationMatrix*vec4<f32>(normalize(nv*vec3<f32>(bump[0],bump[1],bump[2])),1.0);
@@ -45,18 +47,21 @@ fn main(
 
     var reflection_dir=normalize(reflect(normalize(lightDirection), n));
 
-    if( dot(lightDirection, n) >= 0.0) {
-       reflection_dir= vec3<f32>(0.0,0.0,0.0);
-    };
+    // if( dot(lightDirection, n) >= 0.0) {
+    //    reflection_dir= vec3<f32>(0.0,0.0,0.0);
+    // };
     
     //a漫反射角度系数
     let a=dot(vec4<f32>(-normalize(lightDirection),1.0),vec4<f32>(n,1.0))-1;
     //b镜面反射角度系数
     let b= dot(reflection_dir,normalize(cameraPos-vec3<f32>(pos[0],pos[1],pos[2])));
 
-    let res=vec4<f32>(0.1,0.1,0.1,1.0)*vec4<f32>(texConfig.ka,1.0)+
-    saturate(a*kd)+
-    vec4<f32>(0.3,0.3,0.3,1.0)*saturate(pow(b,texConfig.Ns)*ks);
+    let res=
+    vec4<f32>(0.1,0.1,0.1,0.0)*vec4<f32>(texConfig.ka,1.0)+
+    vec4<f32>(1.0,1.0,1.0,0.0)*saturate(abs(a)*kd)+
+    vec4<f32>(0.3,0.3,0.3,0.0)*saturate(pow(b,texConfig.Ns)*ks)+
+    vec4<f32>(0.0,0.0,0.0,d.a)
+    ;
 
     return res;
 }

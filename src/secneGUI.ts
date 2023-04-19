@@ -172,16 +172,16 @@ export class sceneGUI extends sceneRender {
         this.canvas?.addEventListener('keydown', function (e) {
 
             if (e.code === 'KeyS') {
-                ctrl.throttle(Med,timeout, [0.0,-0.03,0.0])
+                ctrl.throttle(Med,timeout, [0.0,-0.01,0.0])
             }
             if (e.code === 'KeyA') {
-                ctrl.throttle(Med, timeout,[-0.03,0.0,0.0])
+                ctrl.throttle(Med, timeout,[-0.01,0.0,0.0])
             }
             if (e.code === 'KeyW') {
-                ctrl.throttle(Med, timeout,[0.0,0.03,0.0])
+                ctrl.throttle(Med, timeout,[0.0,0.01,0.0])
             }
             if (e.code === 'KeyD') {
-                ctrl.throttle(Med, timeout,[0.03,0.0,0.0])
+                ctrl.throttle(Med, timeout,[0.01,0.0,0.0])
             }
         });
         this.canvas?.addEventListener('wheel', (e) => {

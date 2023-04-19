@@ -1,4 +1,3 @@
-import { type } from "os"
 
 //功能接口
 export interface select {

@@ -38,6 +38,7 @@ illum 3
 map_Bump odin-magic-parade\\textures\\S_9000_HR_nml.tga.png
 map_Kd odin-magic-parade\\textures\\S_9000_HR_col2.tga.png
 map_Ks odin-magic-parade\\textures\\S_9000_HR_mask.tga.png
+map_d odin-magic-parade\\textures\\S_9000_HR_col2.tga.png
 
 newmtl S_9008_HD
 Ns 10.717731

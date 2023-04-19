@@ -28,7 +28,7 @@ struct TexConfig{
 }
 
 @fragment
-fn main(@location(0) pos: vec3<f32>, 
+fn main(@location(0) pos: vec4<f32>, 
   @location(1) uv: vec2<f32>,
   //法线
   @location(2) nv : vec3<f32>
@@ -39,7 +39,9 @@ fn main(@location(0) pos: vec3<f32>,
     let ks = vec4<f32>(texConfig.ks,1.0);
 
 
-    let n= vec3<f32>( normalize(nv));
+    //世界坐标的法线
+    let n1=rotationMatrix*vec4<f32>(normalize(nv),1.0);
+    let n=vec3<f32>(n1[0],n1[1],n1[2]);
 
     var reflection_dir=normalize(reflect(normalize(lightDirection), n));
 
@@ -49,9 +51,9 @@ fn main(@location(0) pos: vec3<f32>,
     
   
     //a漫反射角度系数
-    let a=dot(vec4<f32>(-normalize(lightDirection),1.0),rotationMatrix*vec4<f32>(n,1.0))-1;
+    let a=dot(vec4<f32>(-normalize(lightDirection),1.0),vec4<f32>(n,1.0))-1;
     //b镜面反射角度系数
-    let b= dot(reflection_dir,normalize(cameraPos-pos));
+    let b= dot(reflection_dir,normalize(cameraPos-vec3<f32>(pos[0],pos[1],pos[3])));
 
     
 

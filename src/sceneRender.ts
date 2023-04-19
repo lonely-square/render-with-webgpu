@@ -4,6 +4,7 @@ import vertexShader from './shader/vertex_01.wgsl';
 import fragmentShader_Kd_Ks_bump from './shader/fragment_Kd_Ks_Bump.wgsl';
 import fragmentShader_Kd from './shader/fragment_Kd.wgsl';
 import fragmentShader_Kd_d from './shader/fragment_Kd_d.wgsl';
+import fragmentShader_Kd_Ks_bump_d from './shader/fragment_Kd_Ks_Bump_d.wgsl';
 import { vec3 } from 'gl-matrix';
 
 
@@ -17,6 +18,7 @@ export abstract class sceneRender extends scene {
     private bindGroupList: GPUBindGroup[] = []
     private context: any
     private mvpMatrix: any
+    private modelMatrix:any
     private rotationMatrix: any
     private depthTexture: any
     private pipeline: GPURenderPipeline[] = []
@@ -117,6 +119,11 @@ export abstract class sceneRender extends scene {
                     texture: {
                         sampleType: "float"
                     }
+                },
+                {
+                    binding: 10,
+                    visibility: GPUShaderStage.VERTEX,
+                    buffer: { type: 'uniform' }
                 },
             ]
 
@@ -310,6 +317,11 @@ export abstract class sceneRender extends scene {
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
 
+        that.modelMatrix = that.device.createBuffer({
+            size: 4 * 4 * 4,
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        });
+
         that.rotationMatrix = that.device.createBuffer({
             size: 4 * 4 * 4,
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
@@ -390,6 +402,12 @@ export abstract class sceneRender extends scene {
                         binding: 9,
                         resource: that.Map_d_list[index].createView(),
                     },
+                    {
+                        binding: 10,
+                        resource: {
+                            buffer: that.modelMatrix,
+                        }
+                    },
                 ],
             });
 
@@ -417,7 +435,7 @@ export abstract class sceneRender extends scene {
 
         function draw() {
 
-            const [transformationMatrix, rotationMatrix] = getTransformationMatrix(that.canvas.width / that.canvas.height, that.sceneConfig);
+            const [transformationMatrix, rotationMatrix,modelMatrix] = getTransformationMatrix(that.canvas.width / that.canvas.height, that.sceneConfig);
 
             let direction: vec3 = [0, 0, 0]
             let temp: vec3 = [
@@ -459,6 +477,14 @@ export abstract class sceneRender extends scene {
             );
 
             that.device.queue.writeBuffer(
+                that.modelMatrix,
+                0,
+                modelMatrix.buffer,
+                modelMatrix.byteOffset,
+                modelMatrix.byteLength
+            );
+
+            that.device.queue.writeBuffer(
                 that.rotationMatrix,
                 0,
                 rotationMatrix.buffer,
@@ -489,6 +515,7 @@ export abstract class sceneRender extends scene {
             const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
 
             that.vertexBufferList.forEach((url, index) => {
+        
                 passEncoder.setPipeline(that.pipeline[index]);
                 passEncoder.setBindGroup(0, that.bindGroupList[index]);
                 passEncoder.setVertexBuffer(0, that.vertexBufferList[index]);
@@ -504,10 +531,96 @@ export abstract class sceneRender extends scene {
         let that = this
         let res: GPURenderPipeline
 
+        const blendState: GPUBlendState = {
+            color: {
+              srcFactor: "src-alpha",
+              dstFactor: "one-minus-src-alpha",
+              operation: "add"
+            },
+            alpha: {
+              srcFactor: "src-alpha",
+              dstFactor: "one-minus-src-alpha",
+              operation: "add"
+            }
+          };
+
         console.log(that.mtl.mtl)
-        if ( (that.mtl.mtl.get(vertices.mtlname) as any).map_d ) 
+        if ( (that.mtl.mtl.get(vertices.mtlname) as any).map_d &&
+            (that.mtl.mtl.get(vertices.mtlname) as any).map_Bump &&
+            (that.mtl.mtl.get(vertices.mtlname) as any).map_Kd &&
+            (that.mtl.mtl.get(vertices.mtlname) as any).map_Ks 
+            ) 
             {
-                const blendState: GPUBlendState = {
+                const blendState1: GPUBlendState = {
+                    color: {
+                      srcFactor: "src-alpha",
+                      dstFactor: "one-minus-src-alpha",
+                      operation: "add"
+                    },
+                    alpha: {
+                      srcFactor: "one-minus-src-alpha",
+                      dstFactor: "src-alpha",
+                      operation: "add"
+                    }
+                  };
+
+                res = that.device.createRenderPipeline({
+                    layout: that.device.createPipelineLayout({ bindGroupLayouts: [that.piplineGroupLayout] }),
+                    vertex: {
+                        module: that.device.createShaderModule({
+                            code: vertexShader
+                        }),
+                        entryPoint: "main",
+                        buffers: [
+                            {
+                                arrayStride: 32,
+                                attributes: [
+                                    {
+                                        shaderLocation: 0,
+                                        format: "float32x3",
+                                        offset: 0
+                                    },
+                                    {
+                                        shaderLocation: 1,
+                                        format: "float32x2",
+                                        offset: 12
+                                    },
+                                    {
+                                        shaderLocation: 2,
+                                        format: "float32x3",
+                                        offset: 20
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    fragment: {
+                        module: that.device.createShaderModule({
+                            code: fragmentShader_Kd_Ks_bump_d,
+                        }),
+                        entryPoint: 'main',
+                        targets: [
+                            {
+                                format: that.presentationFormat,
+                                // blend:blendState1
+                            },
+                        ],
+                    },
+                    primitive: {
+                        topology: 'triangle-list',
+                        // cullMode: 'back',
+                    },
+                    
+                    depthStencil: {
+                        depthWriteEnabled: true,
+                        depthCompare: 'less',
+                        format: 'depth24plus',
+                    },
+                });
+        }
+        else if ( (that.mtl.mtl.get(vertices.mtlname) as any).map_d ) 
+            {
+                const blendState2: GPUBlendState = {
                     color: {
                       srcFactor: "src-alpha",
                       dstFactor: "one-minus-src-alpha",
@@ -558,7 +671,7 @@ export abstract class sceneRender extends scene {
                         targets: [
                             {
                                 format: that.presentationFormat,
-                                blend:blendState
+                                blend:blendState2
                             },
                         ],
                     },
@@ -578,6 +691,7 @@ export abstract class sceneRender extends scene {
             (that.mtl.mtl.get(vertices.mtlname) as any).map_Kd &&
             (that.mtl.mtl.get(vertices.mtlname) as any).map_Ks
         ) {
+            
             res = that.device.createRenderPipeline({
                 layout: that.device.createPipelineLayout({ bindGroupLayouts: [that.piplineGroupLayout] }),
                 vertex: {
@@ -616,6 +730,7 @@ export abstract class sceneRender extends scene {
                     targets: [
                         {
                             format: that.presentationFormat,
+                            blend:blendState
                         },
                     ],
                 },
@@ -669,6 +784,7 @@ export abstract class sceneRender extends scene {
                     targets: [
                         {
                             format: that.presentationFormat,
+                            blend:blendState
                         },
                     ],
                 },

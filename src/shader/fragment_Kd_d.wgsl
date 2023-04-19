@@ -28,7 +28,8 @@ struct TexConfig{
 }
 
 @fragment
-fn main(@location(0) pos: vec3<f32>, 
+fn main(
+  @location(0) pos: vec4<f32>, 
   @location(1) uv: vec2<f32>,
   //法线
   @location(2) nv : vec3<f32>
@@ -37,22 +38,30 @@ fn main(@location(0) pos: vec3<f32>,
     
     let d = textureSample(dTexture, mySampler, uv);
     let ks = vec4<f32>(texConfig.ks,1.0);
-    let alpha:f32=length(d);
     let kd = d;
 
+    //世界坐标的法线
+    let n1=rotationMatrix*vec4<f32>(nv,1.0);
+    let n=vec3<f32>(n1[0],n1[1],n1[2]);
 
-    let n=normalize(nv);
+    var reflection_dir=normalize(reflect(normalize(lightDirection), n));
 
-    let reflection_dir =normalize(reflect(normalize(lightDirection), n));
-  
+    if( dot(lightDirection, n) >= 0.0) {
+       reflection_dir= vec3<f32>(0.0,0.0,0.0);
+    };
+
+
     //a漫反射角度系数
-    let a=dot(vec4<f32>(-normalize(lightDirection),1.0),rotationMatrix*vec4<f32>(n,1.0))-1;
+    let a=dot(vec4<f32>(-normalize(lightDirection),1.0),vec4<f32>(n,1.0))-1;
     //b镜面反射角度系数
-    // let b= dot(reflection_dir,normalize(cameraPos-pos));
+    let b= dot(reflection_dir,normalize(cameraPos-vec3<f32>(pos[0],pos[1],pos[2])));
 
     
 
-    let res=saturate(a*kd);
+    let res=vec4<f32>(0.1,0.1,0.1,0.0)*vec4<f32>(texConfig.ka,1.0)+
+    vec4<f32>(1.0,1.0,1.0,0.0)*saturate(a*kd)+
+    vec4<f32>(0.3,0.3,0.3,0.0)*saturate(pow(b,texConfig.Ns)*ks)+
+    vec4<f32>(0.0,0.0,0.0,d.a);
 
     return res;
 }

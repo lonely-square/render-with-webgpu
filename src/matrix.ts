@@ -41,5 +41,5 @@ export function getTransformationMatrix(aspect: number, sceneConfig:sceneConfig)
   mat4.rotateY(rotationMatrix, rotationMatrix, rotation.y)
   mat4.rotateZ(rotationMatrix, rotationMatrix, rotation.z)
 
-  return [modelViewProjectionMatrix as Float32Array,rotationMatrix as Float32Array];
+  return [modelViewProjectionMatrix as Float32Array,rotationMatrix as Float32Array,modelMatrix as Float32Array];
 }
