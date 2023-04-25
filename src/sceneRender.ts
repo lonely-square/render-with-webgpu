@@ -6,6 +6,7 @@ import fragmentShader_Kd from './shader/fragment_Kd.wgsl';
 import fragmentShader_Kd_d from './shader/fragment_Kd_d.wgsl';
 import fragmentShader_Kd_Ks_bump_d from './shader/fragment_Kd_Ks_Bump_d.wgsl';
 import fragmentShader from './shader/fragment.wgsl'
+import fragmentShader_skybox from './shader/fragment_skybox.wgsl'
 import { mtlCongfig } from "./interface";
 import { renderObj } from "./renderObj";
 
@@ -24,6 +25,7 @@ export abstract class sceneRender extends scene {
     private rotationMatrix: GPUBuffer | null = null
     private depthTexture: GPUTexture | null = null
     private pipeline: GPURenderPipeline[] = []
+    private skyboxList: GPUTexture[]=[]
     private lightConfig: GPUBuffer | null = null
     private cameraPos: GPUBuffer | null = null
     private piplineGroupLayout: GPUBindGroupLayout | null = null
@@ -36,6 +38,13 @@ export abstract class sceneRender extends scene {
     public abstract addCube(): Promise<void>;
     public abstract addlight(): void;
 
+    /**
+     * 初始化场景里的渲染资源
+     * @param modelUrl 
+     * @param mtlUrl 
+     * @param texUrl 
+     * @returns 
+     */
     init(modelUrl: string, mtlUrl: string, texUrl: string[]): Promise<void> {
         this.vertexBufferList = []
         this.Map_kd_list = []
@@ -45,11 +54,12 @@ export abstract class sceneRender extends scene {
         this.texConfigList = []
         this.Map_d_list = []
         this.pipeline = []
+        this.skyboxList=[]
         return super.init(modelUrl, mtlUrl, texUrl)
     }
     /**
-  * 渲染场景
-  */
+     * 渲染场景，每次调用初始化渲染资源，因为后面写的时候是直接push进去的
+    */
     protected async render() {
         this.vertexBufferList = []
         this.Map_kd_list = []
@@ -59,10 +69,13 @@ export abstract class sceneRender extends scene {
         this.texConfigList = []
         this.Map_d_list = []
         this.pipeline = []
+        this.skyboxList=[]
         await this.prepareResource()
         await this.webGPURender()
     }
-
+    /**
+     * 准备各种固定的不用实时调整的资源
+     */
     private async prepareResource() {
         let that = this
 
@@ -136,6 +149,14 @@ export abstract class sceneRender extends scene {
                     visibility: GPUShaderStage.VERTEX,
                     buffer: { type: 'uniform' }
                 },
+                {
+                    binding: 11,
+                    visibility: GPUShaderStage.FRAGMENT,
+                    texture: {
+                        sampleType: 'float', 
+                        viewDimension: 'cube'
+                    }
+                },
             ]
 
         });
@@ -160,6 +181,50 @@ export abstract class sceneRender extends scene {
 
         //贴图，顶点数据放入缓存
         for (let renderObj of that.renderObjList) {
+            //天空盒
+            let cubemapTexture: GPUTexture;
+            {
+                // The order of the array layers is [+X, -X, +Y, -Y, +Z, -Z]
+                const imgSrcs = [
+                  "./model/skymap/posx.jpg",
+                  "./model/skymap/negx.jpg",
+                  "./model/skymap/posy.jpg",
+                  "./model/skymap/negy.jpg",
+                  "./model/skymap/posz.jpg",
+                  "./model/skymap/negz.jpg",
+                ];
+                const promises = imgSrcs.map((src) => {
+                  const img = document.createElement('img');
+                  img.src = src;
+                  return img.decode().then(() => createImageBitmap(img));
+                });
+                const imageBitmaps = await Promise.all(promises);
+            
+                cubemapTexture = that.device.createTexture({
+                  dimension: '2d',
+                  // Create a 2d array texture.
+                  // Assume each image has the same size.
+                  size: [imageBitmaps[0].width, imageBitmaps[0].height, 6],
+                  format: 'rgba8unorm',
+                  usage:
+                    GPUTextureUsage.TEXTURE_BINDING |
+                    GPUTextureUsage.COPY_DST |
+                    GPUTextureUsage.RENDER_ATTACHMENT,
+                });
+            
+                for (let i = 0; i < imageBitmaps.length; i++) {
+                  const imageBitmap = imageBitmaps[i];
+                  that.device.queue.copyExternalImageToTexture(
+                    { source: imageBitmap },
+                    { texture: cubemapTexture, origin: [0, 0, i] },
+                    [imageBitmap.width, imageBitmap.height]
+                  );
+                }
+              }
+
+              that.skyboxList.push(cubemapTexture)
+
+
             //贴图数据
             const texture_Kd = new Image()
 
@@ -368,7 +433,7 @@ export abstract class sceneRender extends scene {
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
 
-
+        console.log(that.renderObjList,that.pipeline)
 
 
         //设置采样器
@@ -438,6 +503,12 @@ export abstract class sceneRender extends scene {
                             buffer: that.modelMatrix as GPUBuffer,
                         }
                     },
+                    {
+                        binding: 11,
+                        resource: that.skyboxList[index].createView({
+                            dimension: 'cube',
+                          }),
+                    },
                 ],
             });
 
@@ -445,10 +516,11 @@ export abstract class sceneRender extends scene {
 
         })
     }
-
+    /**
+     * 开始渲染，并在渲染的每一帧调整资源
+     */
     private async webGPURender() {
         let that = this
-
         scene.switchFlag = false
         requestAnimationFrame(frame);
         function frame() {
@@ -550,6 +622,9 @@ export abstract class sceneRender extends scene {
         }
     }
 
+    /**
+     * 根据不同物体，生成渲染管线
+     */
     private prePipline(renderObj: renderObj) {
         let that = this
         let res: GPURenderPipeline
@@ -567,7 +642,61 @@ export abstract class sceneRender extends scene {
             }
         };
 
-        if (renderObj.mtlConfig.map_d &&
+        if(renderObj.mtlname === "天空盒"){
+            res = that.device.createRenderPipeline({
+                layout: that.device.createPipelineLayout({ bindGroupLayouts: [that.piplineGroupLayout as GPUBindGroupLayout] }),
+                vertex: {
+                    module: that.device.createShaderModule({
+                        code: vertexShader
+                    }),
+                    entryPoint: "main",
+                    buffers: [
+                        {
+                            arrayStride: 32,
+                            attributes: [
+                                {
+                                    shaderLocation: 0,
+                                    format: "float32x3",
+                                    offset: 0
+                                },
+                                {
+                                    shaderLocation: 1,
+                                    format: "float32x2",
+                                    offset: 12
+                                },
+                                {
+                                    shaderLocation: 2,
+                                    format: "float32x3",
+                                    offset: 20
+                                }
+                            ]
+                        }
+                    ]
+                },
+                fragment: {
+                    module: that.device.createShaderModule({
+                        code: fragmentShader_skybox,
+                    }),
+                    entryPoint: 'main',
+                    targets: [
+                        {
+                            format: that.presentationFormat as GPUTextureFormat,
+                            blend: blendState
+                        },
+                    ],
+                },
+                primitive: {
+                    topology: 'triangle-list',
+                    // cullMode: 'back',
+                },
+                depthStencil: {
+                    depthWriteEnabled: true,
+                    depthCompare: 'less',
+                    format: 'depth24plus',
+                },
+            });
+        }
+        else if(renderObj.mtlConfig.map_d &&
             renderObj.mtlConfig.map_Bump &&
             renderObj.mtlConfig.map_Kd &&
             renderObj.mtlConfig.map_Ks

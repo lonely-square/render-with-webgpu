@@ -75,18 +75,13 @@ fn main(
 
       res=
       res+
-      // vec4<f32>(0.1,0.1,0.1,0.0)*vec4<f32>(texConfig.ka,1.0)+
-      // vec4<f32>(1.0,1.0,1.0,0.0)*saturate(a*kd)+
-      // vec4<f32>(0.3,0.3,0.3,0.0)*saturate(pow(b,texConfig.Ns)*ks)+
-      // vec4<f32>(0.0,0.0,0.0,d.a);
       vec4<f32>(0.1,0.1,0.1,0.0)*vec4<f32>( vec4<f32>(lightcolor,1.0)*kd )+
       vec4<f32>(1.0,1.0,1.0,0.0)*saturate(a*vec4<f32>(lightcolor,1.0)*kd)+
       vec4<f32>(0.3,0.3,0.3,0.0)*saturate(pow(b,texConfig.Ns)*ks*vec4<f32>(lightcolor,1.0))+
       vec4<f32>(0.0,0.0,0.0,d.a);
     }
-    // var c=f32(arrayLength(&lightConfig));
-    // var t:f32=c-12.0;
+
 
     return res;
-    // return vec4<f32>( vec3<f32>( t),1.0);
+
 }

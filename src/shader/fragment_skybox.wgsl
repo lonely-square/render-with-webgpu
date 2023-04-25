@@ -1,7 +1,4 @@
 @group(0) @binding(1) var mySampler: sampler;
-@group(0) @binding(2) var kdTexture: texture_2d<f32>;
-@group(0) @binding(3) var bumpTexture: texture_2d<f32>;
-@group(0) @binding(4) var ksTexture: texture_2d<f32>;
 @group(0) @binding(9) var dTexture: texture_2d<f32>;
 //物体旋转矩阵
 @group(0) @binding(6) var<uniform> rotationMatrix : mat4x4<f32>;
@@ -10,6 +7,7 @@
 //材质参数
 @group(0) @binding(8) var<uniform> texConfig : TexConfig;
 
+@group(0) @binding(11) var skyTexture: texture_cube<f32>;
 
 struct TexConfig{
    //
@@ -41,13 +39,15 @@ struct light_{
 }
 
 @fragment
-fn main(@location(0) pos: vec4<f32>, 
-  @location(1) uv: vec2<f32>,
-  //法线
-  @location(2) nv : vec3<f32>
+fn main(
+    @location(0) pos: vec4<f32>, 
+    @location(1) uv: vec2<f32>,
+    //法线
+    @location(2) nv : vec3<f32>,
+    @location(3) pos2 : vec3<f32>
 ) -> @location(0) vec4<f32> {
 
-    let kd = textureSample(kdTexture, mySampler, uv);
+    let kd = vec4<f32>(texConfig.kd,1.0);
     let ks = vec4<f32>(texConfig.ks,1.0);
 
 
@@ -77,5 +77,6 @@ fn main(@location(0) pos: vec4<f32>,
       saturate(pow(b,texConfig.Ns)*ks*vec4<f32>(lightcolor,1.0));
     }
     
-    return res;
+    var cubemapVec = pos.xyz - vec3(0.5);
+    return textureSample( skyTexture,  mySampler, pos2);
 }

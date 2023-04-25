@@ -30,7 +30,7 @@ export function getTransformationMatrix(aspect: number, sceneConfig:sceneConfig)
 
 //变裁剪坐标
   const projectionMatrix = mat4.create();
-  mat4.perspective(projectionMatrix, Math.PI/3 , aspect, 0.001, 20.0);
+  mat4.perspective(projectionMatrix, Math.PI/3 , aspect, 0.001, 2000.0);
 
   const modelViewProjectionMatrix = mat4.create();
   mat4.multiply(modelViewProjectionMatrix, cameraMatrix, modelMatrix);

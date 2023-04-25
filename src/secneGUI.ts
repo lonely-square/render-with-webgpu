@@ -28,7 +28,7 @@ export class sceneGUI extends sceneRender {
 
             scene.switchFlag = true
             await this.init("./model/lantern/lantern.obj", "./model/lantern/灯笼.mtl", ["./model/lantern/tex/000001B95523DFF8.jpg", "./model/lantern/tex/000001B955240538.jpg"]);
-            await this.render()
+            
 
         }
         if (name === "girl") {
@@ -56,9 +56,12 @@ export class sceneGUI extends sceneRender {
             this.sceneConfig.objConfig.scale.y /= 200
             this.sceneConfig.objConfig.scale.z /= 200
 
-            await this.render()
+    
+           
+            
         }
-
+        // await this.render()
+        await this.addskybox()
         this.initController()
 
     }
@@ -91,11 +94,81 @@ export class sceneGUI extends sceneRender {
         this.renderObjList.push(e)
 
         await this.render()
-        console.log(this.renderObjList)
+        
         this.initController()
 
 
     }
+
+    public async addskybox(): Promise<void> {
+        scene.switchFlag = true
+
+        let vertex = new Float32Array([
+
+            1000, -1000, 1000,   1, 0, 1,    1, 1,
+            -1000, -1000, 1000,   0, 0, 1,   0, 1,
+            -1000, -1000, -1000,   0, 0, 0,  0, 0,
+            1000, -1000, -1000,   1, 0, 0,   1, 0,
+            1000, -1000, 1000,   1, 0, 1,    1, 1,
+            -1000, -1000, -1000,  0, 0, 0,   0, 0,
+
+            1000, 1000, 1000,     1, 1, 1,   1, 1,
+            1000, -1000, 1000,    1, 0, 1,    0, 1,
+            1000, -1000, -1000,   1, 0, 0,    0, 0,
+            1000, 1000, -1000,    1, 1, 0,    1, 0,
+            1000, 1000, 1000,     1, 1, 1,    1, 1,
+            1000, -1000, -1000,   1, 0, 0,    0, 0,
+
+            -1000, 1000, 1000,    0, 1, 1,    1, 1,
+            1000, 1000, 1000,     1, 1, 1,    0, 1,
+            1000, 1000, -1000,    1, 1, 0,    0, 0,
+            -1000, 1000, -1000,   0, 1, 0,    1, 0,
+            -1000, 1000, 1000,    0, 1, 1,    1, 1,
+            1000, 1000, -1000,    1, 1, 0,    0, 0,
+
+            -1000, -1000, 1000,    0, 0, 1,   1, 1,
+            -1000, 1000, 1000,     0, 1, 1,   0, 1,
+            -1000, 1000, -1000,    0, 1, 0,   0, 0,
+            -1000, -1000, -1000,   0, 0, 0,   1, 0,
+            -1000, -1000, 1000,    0, 0, 1,   1, 1,
+            -1000, 1000, -1000,    0, 1, 0,   0, 0,
+
+            1000, 1000, 1000,     1, 1, 1,    1, 1,
+            -1000, 1000, 1000,    0, 1, 1,    0, 1,
+            -1000, -1000, 1000,   0, 0, 1,    0, 0,
+            -1000, -1000, 1000,   0, 0, 1,    0, 0,
+            1000, -1000, 1000,    1, 0, 1,    1, 0,
+            1000, 1000, 1000,     1, 1, 1,    1, 1,
+
+            1000, -1000, -1000,     1, 0, 0,    1, 1,
+            -1000, -1000, -1000,    0, 0, 0,    0, 1,
+            -1000, 1000, -1000,     0, 1, 0,    0, 0,
+            1000, 1000, -1000,     1, 1, 0,    1, 0,
+            1000, -1000, -1000,    1, 0, 0,    1, 1,
+            -1000, 1000, -1000,    0, 1, 0,    0, 0,
+        ])
+        let mtlConfig: mtlCongfig = {
+            Ns: 1000,
+            Ka: [0.5, 0.5, 0.5],
+            Kd: [0.8, 0, 0],
+            Ks: [1, 1, 1],
+            Ke: [0, 0, 0],
+            Ni: 1.45,
+            d: 1,
+            illum: 1,
+        }
+
+
+        let e: renderObj = new renderObj("天空盒", vertex, 36, mtlConfig)
+        this.renderObjList.unshift(e)
+
+        await this.render()
+        
+        this.initController()
+
+
+    }
+
     public addlight(): void {
         let e: lightConfig = {
             pattern: "平行光",
@@ -193,6 +266,20 @@ export class sceneGUI extends sceneRender {
             folder_3_1_1.add(this.sceneConfig.lightConfig[i].position as any, "x", undefined, undefined, 10)
             folder_3_1_1.add(this.sceneConfig.lightConfig[i].position as any, "y", undefined, undefined, 10)
             folder_3_1_1.add(this.sceneConfig.lightConfig[i].position as any, "z", undefined, undefined, 10)
+        }
+
+        let folder_4 = that.datGUi.addFolder("材质")
+        folder_4.open()
+        for (let i = 0; i < this.renderObjList.length; i++) {
+            let folder_4_1 = folder_4.addFolder(`${this.renderObjList[i].mtlname}_${i + 1}`)
+            folder_4_1.add(this.renderObjList[i].mtlConfig, "Ns").name('高光反射指数')
+            folder_4_1.add(this.renderObjList[i].mtlConfig, "Ni").name('折射率')
+            folder_4_1.add(this.renderObjList[i].mtlConfig, "d").name('透明度')
+            folder_4_1.add(this.renderObjList[i].mtlConfig, "illum").name('光照模式')
+            folder_4_1.addColor(this.renderObjList[i].mtlConfig, "Ka").name('环境光反射系数')
+            folder_4_1.addColor(this.renderObjList[i].mtlConfig, "Ks").name('高光反射系数')
+            folder_4_1.addColor(this.renderObjList[i].mtlConfig, "Kd").name('漫反射系数')
+            folder_4_1.addColor(this.renderObjList[i].mtlConfig, "Ke").name('自发光颜色')
         }
 
 
