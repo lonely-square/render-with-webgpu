@@ -17,22 +17,24 @@ export abstract class sceneRender extends scene {
     private Map_Bump_list: GPUTexture[] = []
     private Map_ks_list: GPUTexture[] = []
     private bindGroupList: GPUBindGroup[] = []
-    private context: GPUCanvasContext | null =null
-    private mvpMatrix: GPUBuffer | null =null
-    private modelMatrix:GPUBuffer | null =null
-    private rotationMatrix: GPUBuffer | null =null
-    private depthTexture: GPUTexture | null =null
+    private context: GPUCanvasContext | null = null
+    private mvpMatrix: GPUBuffer | null = null
+    private modelMatrix: GPUBuffer | null = null
+    private rotationMatrix: GPUBuffer | null = null
+    private depthTexture: GPUTexture | null = null
     private pipeline: GPURenderPipeline[] = []
-    private lightVector: GPUBuffer | null =null
-    private cameraPos: GPUBuffer | null =null
-    private piplineGroupLayout: GPUBindGroupLayout | null =null
+    private lightConfig: GPUBuffer | null = null
+    private cameraPos: GPUBuffer | null = null
+    private piplineGroupLayout: GPUBindGroupLayout | null = null
     private presentationFormat: GPUTextureFormat | null = null
     private texConfigList: GPUBuffer[] = []
     private Map_d_list: GPUTexture[] = []
-    
+
 
     abstract switchScene(name: string): Promise<void>
-
+    public abstract addCube(): void;
+    public abstract addlight(): void;
+    
     init(modelUrl: string, mtlUrl: string, texUrl: string[]): Promise<void> {
         this.vertexBufferList = []
         this.Map_kd_list = []
@@ -97,7 +99,7 @@ export abstract class sceneRender extends scene {
                 {
                     binding: 5,
                     visibility: GPUShaderStage.FRAGMENT,
-                    buffer: { type: 'uniform' }
+                    buffer: { type: 'read-only-storage' }
                 },
                 {
                     binding: 6,
@@ -135,7 +137,7 @@ export abstract class sceneRender extends scene {
 
         that.context.configure({
             device: that.device,
-            format: that.presentationFormat as GPUTextureFormat ,
+            format: that.presentationFormat as GPUTextureFormat,
             alphaMode: 'opaque',
         });
 
@@ -154,7 +156,7 @@ export abstract class sceneRender extends scene {
             //贴图数据
             const texture_Kd = new Image()
             texture_Kd.src = that.texUrl.filter(url => {
-                return url.includes((that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).map_Kd)
+                return url.includes((that.mtl.mtl.get(vertices.mtlname) as any).map_Kd)
             })[0]
             await texture_Kd.decode()
             let imageBitmap = await createImageBitmap(texture_Kd);
@@ -235,11 +237,11 @@ export abstract class sceneRender extends scene {
             if (!(that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).map_d) {
                 that.Map_d_list.push(cubeTexture)
             } else {
-            
+
                 await texture_d.decode()
 
                 const imageBitmap4 = await createImageBitmap(texture_d);
-                
+
                 const cubeTexture4 = that.device.createTexture({
                     size: [imageBitmap4.width, imageBitmap4.height, 1],
                     format: 'rgba8unorm',
@@ -254,7 +256,7 @@ export abstract class sceneRender extends scene {
                     [imageBitmap4.width, imageBitmap4.height]
                 );
                 that.Map_d_list.push(cubeTexture4)
-            
+
             }
 
             //贴图设置
@@ -313,7 +315,7 @@ export abstract class sceneRender extends scene {
 
 
         //设置mvp缓存
-        that.mvpMatrix  = that.device.createBuffer({
+        that.mvpMatrix = that.device.createBuffer({
             size: 4 * 4 * 4,
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
@@ -329,9 +331,9 @@ export abstract class sceneRender extends scene {
         });
 
         //光线方面
-        that.lightVector = that.device.createBuffer({
-            size: 4 * 3,
-            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        that.lightConfig = that.device.createBuffer({
+            size: 4 * 16 * 10,
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
         });
 
         that.cameraPos = that.device.createBuffer({
@@ -378,7 +380,7 @@ export abstract class sceneRender extends scene {
                     {
                         binding: 5,
                         resource: {
-                            buffer: that.lightVector as GPUBuffer,
+                            buffer: that.lightConfig as GPUBuffer,
                         }
                     },
                     {
@@ -436,25 +438,23 @@ export abstract class sceneRender extends scene {
 
         function draw() {
 
-            const [transformationMatrix, rotationMatrix,modelMatrix] = getTransformationMatrix(that.canvas.width / that.canvas.height, that.sceneConfig);
+            const [transformationMatrix, rotationMatrix, modelMatrix] = getTransformationMatrix(that.canvas.width / that.canvas.height, that.sceneConfig);
 
-            let direction: vec3 = [0, 0, 0]
-            let temp: vec3 = [
-                that.sceneConfig.lightConfig.position.x,
-                that.sceneConfig.lightConfig.position.y,
-                that.sceneConfig.lightConfig.position.z
-            ]
-            vec3.subtract(direction, direction, temp)
-            let array1 = new Float32Array(direction)
+            let res: number[] = [that.sceneConfig.lightConfig.length,0,0,0]
+            for (let i = 0; i < that.sceneConfig.lightConfig.length; i++) {
+                res = [...res, that.sceneConfig.lightConfig[i].type,0,0,0, ...that.sceneConfig.lightConfig[i].color,0, that.sceneConfig.lightConfig[i].position.x, that.sceneConfig.lightConfig[i].position.y, that.sceneConfig.lightConfig[i].position.z,0]
+            }
+            let res_ = new Float32Array(res)
+            
             that.device.queue.writeBuffer(
-                that.lightVector as GPUBuffer,
+                that.lightConfig as GPUBuffer,
                 0,
-                array1.buffer,
-                array1.byteOffset,
-                array1.byteLength
+                res_.buffer,
+                res_.byteOffset,
+                res_.byteLength
             );
 
-            temp = [
+            let temp = [
                 that.sceneConfig.cameraConfig.position.x,
                 that.sceneConfig.cameraConfig.position.y,
                 that.sceneConfig.cameraConfig.position.z
@@ -516,7 +516,7 @@ export abstract class sceneRender extends scene {
             const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
 
             that.vertexBufferList.forEach((url, index) => {
-        
+
                 passEncoder.setPipeline(that.pipeline[index]);
                 passEncoder.setBindGroup(0, that.bindGroupList[index]);
                 passEncoder.setVertexBuffer(0, that.vertexBufferList[index]);
@@ -538,165 +538,162 @@ export abstract class sceneRender extends scene {
 
         const blendState: GPUBlendState = {
             color: {
-              srcFactor: "src-alpha",
-              dstFactor: "one-minus-src-alpha",
-              operation: "add"
+                srcFactor: "src-alpha",
+                dstFactor: "one-minus-src-alpha",
+                operation: "add"
             },
             alpha: {
-              srcFactor: "src-alpha",
-              dstFactor: "one-minus-src-alpha",
-              operation: "add"
+                srcFactor: "src-alpha",
+                dstFactor: "one-minus-src-alpha",
+                operation: "add"
             }
-          };
-
-        console.log(that.mtl.mtl)
-        if ( (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).map_d &&
+        };
+        
+        if ((that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).map_d &&
             (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).map_Bump &&
             (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).map_Kd &&
-            (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).map_Ks 
-            ) 
-            {
-                const blendState1: GPUBlendState = {
-                    color: {
-                      srcFactor: "src-alpha",
-                      dstFactor: "one-minus-src-alpha",
-                      operation: "add"
-                    },
-                    alpha: {
-                      srcFactor: "one-minus-src-alpha",
-                      dstFactor: "src-alpha",
-                      operation: "add"
-                    }
-                  };
+            (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).map_Ks
+        ) {
+            const blendState1: GPUBlendState = {
+                color: {
+                    srcFactor: "src-alpha",
+                    dstFactor: "one-minus-src-alpha",
+                    operation: "add"
+                },
+                alpha: {
+                    srcFactor: "one-minus-src-alpha",
+                    dstFactor: "src-alpha",
+                    operation: "add"
+                }
+            };
 
-                res = that.device.createRenderPipeline({
-                    layout: that.device.createPipelineLayout({ bindGroupLayouts: [that.piplineGroupLayout as GPUBindGroupLayout] }),
-                    vertex: {
-                        module: that.device.createShaderModule({
-                            code: vertexShader
-                        }),
-                        entryPoint: "main",
-                        buffers: [
-                            {
-                                arrayStride: 32,
-                                attributes: [
-                                    {
-                                        shaderLocation: 0,
-                                        format: "float32x3",
-                                        offset: 0
-                                    },
-                                    {
-                                        shaderLocation: 1,
-                                        format: "float32x2",
-                                        offset: 12
-                                    },
-                                    {
-                                        shaderLocation: 2,
-                                        format: "float32x3",
-                                        offset: 20
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    fragment: {
-                        module: that.device.createShaderModule({
-                            code: fragmentShader_Kd_Ks_bump_d,
-                        }),
-                        entryPoint: 'main',
-                        targets: [
-                            {
-                                format: that.presentationFormat as GPUTextureFormat,
-                                // blend:blendState1
-                            },
-                        ],
-                    },
-                    primitive: {
-                        topology: 'triangle-list',
-                        // cullMode: 'back',
-                    },
-                    
-                    depthStencil: {
-                        depthWriteEnabled: true,
-                        depthCompare: 'less',
-                        format: 'depth24plus',
-                    },
-                });
+            res = that.device.createRenderPipeline({
+                layout: that.device.createPipelineLayout({ bindGroupLayouts: [that.piplineGroupLayout as GPUBindGroupLayout] }),
+                vertex: {
+                    module: that.device.createShaderModule({
+                        code: vertexShader
+                    }),
+                    entryPoint: "main",
+                    buffers: [
+                        {
+                            arrayStride: 32,
+                            attributes: [
+                                {
+                                    shaderLocation: 0,
+                                    format: "float32x3",
+                                    offset: 0
+                                },
+                                {
+                                    shaderLocation: 1,
+                                    format: "float32x2",
+                                    offset: 12
+                                },
+                                {
+                                    shaderLocation: 2,
+                                    format: "float32x3",
+                                    offset: 20
+                                }
+                            ]
+                        }
+                    ]
+                },
+                fragment: {
+                    module: that.device.createShaderModule({
+                        code: fragmentShader_Kd_Ks_bump_d,
+                    }),
+                    entryPoint: 'main',
+                    targets: [
+                        {
+                            format: that.presentationFormat as GPUTextureFormat,
+                            // blend:blendState1
+                        },
+                    ],
+                },
+                primitive: {
+                    topology: 'triangle-list',
+                    // cullMode: 'back',
+                },
+
+                depthStencil: {
+                    depthWriteEnabled: true,
+                    depthCompare: 'less',
+                    format: 'depth24plus',
+                },
+            });
         }
-        else if ( (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).map_d ) 
-            {
-                const blendState2: GPUBlendState = {
-                    color: {
-                      srcFactor: "src-alpha",
-                      dstFactor: "one-minus-src-alpha",
-                      operation: "add"
-                    },
-                    alpha: {
-                      srcFactor: "src-alpha",
-                      dstFactor: "one-minus-src-alpha",
-                      operation: "add"
-                    }
-                  };
+        else if ((that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).map_d) {
+            const blendState2: GPUBlendState = {
+                color: {
+                    srcFactor: "src-alpha",
+                    dstFactor: "one-minus-src-alpha",
+                    operation: "add"
+                },
+                alpha: {
+                    srcFactor: "src-alpha",
+                    dstFactor: "one-minus-src-alpha",
+                    operation: "add"
+                }
+            };
 
-                res = that.device.createRenderPipeline({
-                    layout: that.device.createPipelineLayout({ bindGroupLayouts: [that.piplineGroupLayout as GPUBindGroupLayout] }),
-                    vertex: {
-                        module: that.device.createShaderModule({
-                            code: vertexShader
-                        }),
-                        entryPoint: "main",
-                        buffers: [
-                            {
-                                arrayStride: 32,
-                                attributes: [
-                                    {
-                                        shaderLocation: 0,
-                                        format: "float32x3",
-                                        offset: 0
-                                    },
-                                    {
-                                        shaderLocation: 1,
-                                        format: "float32x2",
-                                        offset: 12
-                                    },
-                                    {
-                                        shaderLocation: 2,
-                                        format: "float32x3",
-                                        offset: 20
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    fragment: {
-                        module: that.device.createShaderModule({
-                            code: fragmentShader_Kd_d,
-                        }),
-                        entryPoint: 'main',
-                        targets: [
-                            {
-                                format: that.presentationFormat as GPUTextureFormat,
-                                blend:blendState2
-                            },
-                        ],
-                    },
-                    primitive: {
-                        topology: 'triangle-list',
-                        // cullMode: 'back',
-                    },
-                    
-                    depthStencil: {
-                        depthWriteEnabled: true,
-                        depthCompare: 'less',
-                        format: 'depth24plus',
-                    },
-                });
+            res = that.device.createRenderPipeline({
+                layout: that.device.createPipelineLayout({ bindGroupLayouts: [that.piplineGroupLayout as GPUBindGroupLayout] }),
+                vertex: {
+                    module: that.device.createShaderModule({
+                        code: vertexShader
+                    }),
+                    entryPoint: "main",
+                    buffers: [
+                        {
+                            arrayStride: 32,
+                            attributes: [
+                                {
+                                    shaderLocation: 0,
+                                    format: "float32x3",
+                                    offset: 0
+                                },
+                                {
+                                    shaderLocation: 1,
+                                    format: "float32x2",
+                                    offset: 12
+                                },
+                                {
+                                    shaderLocation: 2,
+                                    format: "float32x3",
+                                    offset: 20
+                                }
+                            ]
+                        }
+                    ]
+                },
+                fragment: {
+                    module: that.device.createShaderModule({
+                        code: fragmentShader_Kd_d,
+                    }),
+                    entryPoint: 'main',
+                    targets: [
+                        {
+                            format: that.presentationFormat as GPUTextureFormat,
+                            blend: blendState2
+                        },
+                    ],
+                },
+                primitive: {
+                    topology: 'triangle-list',
+                    // cullMode: 'back',
+                },
+
+                depthStencil: {
+                    depthWriteEnabled: true,
+                    depthCompare: 'less',
+                    format: 'depth24plus',
+                },
+            });
         }
         else if ((that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).map_Bump &&
             (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).map_Kd &&
             (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).map_Ks
         ) {
-            
+
             res = that.device.createRenderPipeline({
                 layout: that.device.createPipelineLayout({ bindGroupLayouts: [that.piplineGroupLayout as GPUBindGroupLayout] }),
                 vertex: {
@@ -735,7 +732,7 @@ export abstract class sceneRender extends scene {
                     targets: [
                         {
                             format: that.presentationFormat as GPUTextureFormat,
-                            blend:blendState
+                            blend: blendState
                         },
                     ],
                 },
@@ -789,7 +786,7 @@ export abstract class sceneRender extends scene {
                     targets: [
                         {
                             format: that.presentationFormat as GPUTextureFormat,
-                            blend:blendState
+                            blend: blendState
                         },
                     ],
                 },

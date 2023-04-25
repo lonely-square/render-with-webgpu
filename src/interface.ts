@@ -1,7 +1,10 @@
+import { vec3 } from "gl-matrix"
 
 //功能接口
 export interface select {
     switchScene(name: string): Promise<void>
+    addCube():void
+    addlight():void
 }
 
 
@@ -10,7 +13,7 @@ export interface select {
 export type sceneConfig = {
     objConfig: objConfig
     cameraConfig: cameraConfig
-    lightConfig: lightConfig
+    lightConfig: lightConfig[]
 
 }
 
@@ -20,8 +23,10 @@ type cameraConfig = {
     rotation: coords
 }
 
-type lightConfig = {
-    pattern: "全局光照" | "平行光" | "点光源"
+export type lightConfig = {
+    pattern:  "平行光" |"全局光照" | "点光源"
+    type: 1 | 2 | 3
+    color:number[]
     position: coords
 }
 
@@ -44,7 +49,7 @@ export type mtlCongfig = {
     /** 
     *漫反射贴图，用于实现物体纹理。
     */
-    map_Kd: string,
+    map_Kd?: string,
     /**
      * 法线贴图
      */

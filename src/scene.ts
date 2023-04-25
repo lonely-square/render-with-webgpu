@@ -1,3 +1,4 @@
+import { vec3 } from "gl-matrix";
 import { sceneConfig } from "./interface";
 import { select } from "./interface";
 import { mtl } from "./mtl";
@@ -14,6 +15,8 @@ export abstract class scene implements select {
     protected static switchFlag: boolean
 
     public abstract switchScene(name: string): Promise<void>
+    public abstract addCube(): void;
+    public abstract addlight(): void;
 
     /**
      * 创建一个场景实例
@@ -23,7 +26,7 @@ export abstract class scene implements select {
         scene.switchFlag = false
         this.device = device
         this.canvas = canvas
-        this.name =""
+        this.name = ""
         this.sceneConfig = {
             objConfig: {
                 position: {
@@ -54,14 +57,18 @@ export abstract class scene implements select {
                     z: 0
                 }
             },
-            lightConfig: {
-                pattern:"全局光照",
-                position: {
-                    x: 0,
-                    y: 0,
-                    z: 100
+            lightConfig: [
+                {
+                    pattern: "平行光",
+                    color: [255.0,255.0,255.0],
+                    type:1,
+                    position: {
+                        x: 0,
+                        y: 0,
+                        z: 100
+                    }
                 }
-            }
+            ]
         }
         this.obj = new objMesh()
         this.mtl = new mtl()
@@ -102,18 +109,22 @@ export abstract class scene implements select {
                     z: 0
                 }
             },
-            lightConfig: {
-                pattern:"全局光照",
-                position: {
-                    x: 0,
-                    y: 0,
-                    z: 100
+            lightConfig: [
+                {
+                    pattern: "平行光",
+                    color: [255.0,255.0,255.0],
+                    type:1,
+                    position: {
+                        x: 0,
+                        y: 0,
+                        z: 100
+                    }
                 }
-            }
+            ]
         }
         await this.obj.initialize(modelUrl)
         await this.mtl.initialize(mtlUrl)
- 
+
     }
 
 }

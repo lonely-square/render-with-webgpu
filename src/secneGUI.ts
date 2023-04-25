@@ -5,6 +5,7 @@ import { tools } from "./tools";
 import * as dat from 'dat.gui';
 import Stats from 'stats.js'
 import { vec3 } from "gl-matrix";
+import { lightConfig } from "./interface";
 
 export class sceneGUI extends sceneRender {
 
@@ -61,6 +62,25 @@ export class sceneGUI extends sceneRender {
 
     }
 
+    public addCube(): void{
+
+    }
+    public addlight(): void{
+        let e:lightConfig ={
+            pattern: "平行光",
+            color: [255.0,255.0,255.0],
+            type:1,
+            position: {
+                x: 0,
+                y: 0,
+                z: 100
+            }
+        }
+        this.sceneConfig.lightConfig.push(e)
+        console.log(this.sceneConfig.lightConfig)
+        this.initController()
+    }
+
     private initController() {
 
         let that = this
@@ -70,7 +90,7 @@ export class sceneGUI extends sceneRender {
         that.stats.showPanel(2);
         // that.stats.showPanel(3);
         // this.canvas.appendChild(that.stats.dom);
-        document.body.appendChild( that.stats.dom );
+        document.body.appendChild(that.stats.dom);
 
         function animate() {
 
@@ -122,47 +142,51 @@ export class sceneGUI extends sceneRender {
         folder_2_2.add(this.sceneConfig.cameraConfig.rotation as any, "y", undefined, undefined, 0.01).listen()
         folder_2_2.add(this.sceneConfig.cameraConfig.rotation as any, "z", undefined, undefined, 0.01).listen()
 
-        let folder_3 = that.datGUi.addFolder("light")
 
+        let folder_3 = that.datGUi.addFolder("light")
         folder_3.open()
-        const options_1=["全局光照","平行光","点光源"]
-        folder_3.add({光源:"全局光照"}, "光源").options(options_1).onChange(val=>{
-            if(val === "平行光"){
-                that.sceneConfig.lightConfig.pattern ="平行光"
-            }
-            else if(val === "点光源"){
-                that.sceneConfig.lightConfig.pattern="点光源"
-            }
-            else if(val === "全局光照"){
-                that.sceneConfig.lightConfig.pattern="全局光照"
-            }
-        })
-        let folder_3_1 = folder_3.addFolder("lightPosition")
-        folder_3_1.add(this.sceneConfig.lightConfig.position as any, "x", undefined, undefined, 10).listen
-        folder_3_1.add(this.sceneConfig.lightConfig.position as any, "y", undefined, undefined, 10).listen
-        folder_3_1.add(this.sceneConfig.lightConfig.position as any, "z", undefined, undefined, 10).listen
+
+        for (let i = 0; i < this.sceneConfig.lightConfig.length; i++) {
+            let folder_3_1 = folder_3.addFolder(`light_${i+1}`)
+            const options_1 = ["全局光照", "平行光", "点光源"]
+            folder_3_1.add(this.sceneConfig.lightConfig[i], "pattern").options(options_1).onChange(val => {
+                if (val === "平行光") {
+                    that.sceneConfig.lightConfig[i].pattern = "平行光"
+                }
+                else if (val === "点光源") {
+                    that.sceneConfig.lightConfig[i].pattern = "点光源"
+                }
+                else if (val === "全局光照") {
+                    that.sceneConfig.lightConfig[i].pattern = "全局光照"
+                }
+            })
+            folder_3_1.addColor(this.sceneConfig.lightConfig[i],'color').name('灯光颜色');
+            let folder_3_1_1 = folder_3_1.addFolder(`lightPosition_${i+1}`)
+            folder_3_1_1.add(this.sceneConfig.lightConfig[i].position as any, "x", undefined, undefined, 10)
+            folder_3_1_1.add(this.sceneConfig.lightConfig[i].position as any, "y", undefined, undefined, 10)
+            folder_3_1_1.add(this.sceneConfig.lightConfig[i].position as any, "z", undefined, undefined, 10)
+        }
 
 
 
         const timeout = 20
 
-        function a(dist:vec3){
-
-
+        //旋转
+        function a(dist: vec3) {
             let rotation = that.sceneConfig.cameraConfig.rotation
             const r = mat4.create();
             mat4.rotateX(r, r, rotation.x)
             mat4.rotateY(r, r, rotation.y)
             mat4.rotateZ(r, r, rotation.z)
             mat4.translate(r, r, dist);
-    
-            return [r[12],r[13],r[14]]
+
+            return [r[12], r[13], r[14]]
         }
 
         let dist
         const ctrl = tools();
 
-        function Med(v:vec3) {
+        function Med(v: vec3) {
             dist = a(v)
             that.sceneConfig.cameraConfig.position.x += dist[0]
             that.sceneConfig.cameraConfig.position.y += dist[1]
@@ -172,25 +196,25 @@ export class sceneGUI extends sceneRender {
         this.canvas?.addEventListener('keydown', function (e) {
 
             if (e.code === 'KeyS') {
-                ctrl.throttle(Med,timeout, [0.0,-0.01,0.0])
+                ctrl.throttle(Med, timeout, [0.0, -0.01, 0.0])
             }
             if (e.code === 'KeyA') {
-                ctrl.throttle(Med, timeout,[-0.01,0.0,0.0])
+                ctrl.throttle(Med, timeout, [-0.01, 0.0, 0.0])
             }
             if (e.code === 'KeyW') {
-                ctrl.throttle(Med, timeout,[0.0,0.01,0.0])
+                ctrl.throttle(Med, timeout, [0.0, 0.01, 0.0])
             }
             if (e.code === 'KeyD') {
-                ctrl.throttle(Med, timeout,[0.01,0.0,0.0])
+                ctrl.throttle(Med, timeout, [0.01, 0.0, 0.0])
             }
         });
         this.canvas?.addEventListener('wheel', (e) => {
 
             if (e.deltaY < 0) {
-                ctrl.throttle(Med, timeout,[0.0,0.0,-0.03])
+                ctrl.throttle(Med, timeout, [0.0, 0.0, -0.03])
             }
             if (e.deltaY > 0) {
-                ctrl.throttle(Med, timeout,[0.0,0.0,0.03])
+                ctrl.throttle(Med, timeout, [0.0, 0.0, 0.03])
             }
         })
     }
