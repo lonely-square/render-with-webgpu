@@ -5,8 +5,9 @@ import fragmentShader_Kd_Ks_bump from './shader/fragment_Kd_Ks_Bump.wgsl';
 import fragmentShader_Kd from './shader/fragment_Kd.wgsl';
 import fragmentShader_Kd_d from './shader/fragment_Kd_d.wgsl';
 import fragmentShader_Kd_Ks_bump_d from './shader/fragment_Kd_Ks_Bump_d.wgsl';
-import { vec3 } from 'gl-matrix';
+import fragmentShader from './shader/fragment.wgsl'
 import { mtlCongfig } from "./interface";
+import { renderObj } from "./renderObj";
 
 
 
@@ -32,9 +33,9 @@ export abstract class sceneRender extends scene {
 
 
     abstract switchScene(name: string): Promise<void>
-    public abstract addCube(): void;
+    public abstract addCube(): Promise<void>;
     public abstract addlight(): void;
-    
+
     init(modelUrl: string, mtlUrl: string, texUrl: string[]): Promise<void> {
         this.vertexBufferList = []
         this.Map_kd_list = []
@@ -50,7 +51,14 @@ export abstract class sceneRender extends scene {
   * 渲染场景
   */
     protected async render() {
-
+        this.vertexBufferList = []
+        this.Map_kd_list = []
+        this.Map_Bump_list = []
+        this.Map_ks_list = []
+        this.bindGroupList = []
+        this.texConfigList = []
+        this.Map_d_list = []
+        this.pipeline = []
         await this.prepareResource()
         await this.webGPURender()
     }
@@ -151,13 +159,18 @@ export abstract class sceneRender extends scene {
         });
 
         //贴图，顶点数据放入缓存
-        let count = 0;
-        for (let vertices of that.obj.vertices) {
+        for (let renderObj of that.renderObjList) {
             //贴图数据
             const texture_Kd = new Image()
+
             texture_Kd.src = that.texUrl.filter(url => {
-                return url.includes((that.mtl.mtl.get(vertices.mtlname) as any).map_Kd)
+                if (renderObj.mtlConfig.map_Kd) {
+                    return url.includes(renderObj.mtlConfig.map_Kd)
+                } else {
+                    return './model/tip.jpg'
+                }
             })[0]
+
             await texture_Kd.decode()
             let imageBitmap = await createImageBitmap(texture_Kd);
             let cubeTexture = that.device.createTexture({
@@ -177,13 +190,17 @@ export abstract class sceneRender extends scene {
 
             const texture_Ks = new Image()
             texture_Ks.src = that.texUrl.filter(url => {
-                return url.includes((that.mtl.mtl.get(vertices.mtlname) as any).map_Ks)
+                if (renderObj.mtlConfig.map_Ks) {
+                    return url.includes(renderObj.mtlConfig.map_Ks)
+                } else {
+                    return './model/tip.jpg'
+                }
             })[0]
 
-            if (!(that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).map_Ks) {
+            if (!renderObj.mtlConfig.map_Ks) {
                 that.Map_ks_list.push(cubeTexture)
             } else {
-                console.log(!!texture_Ks.src, texture_Ks.src)
+
                 await texture_Ks.decode()
                 const imageBitmap2 = await createImageBitmap(texture_Ks);
                 const cubeTexture2 = that.device.createTexture({
@@ -205,10 +222,14 @@ export abstract class sceneRender extends scene {
 
             const texture_Bump = new Image()
             texture_Bump.src = that.texUrl.filter(url => {
-                return url.includes((that.mtl.mtl.get(vertices.mtlname) as any).map_Bump)
+                if (renderObj.mtlConfig.map_Bump) {
+                    return url.includes(renderObj.mtlConfig.map_Bump)
+                } else {
+                    return './model/tip.jpg'
+                }
             })[0]
 
-            if (!(that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).map_Bump) {
+            if (!renderObj.mtlConfig.map_Bump) {
                 that.Map_Bump_list.push(cubeTexture)
             } else {
                 await texture_Bump.decode()
@@ -231,10 +252,14 @@ export abstract class sceneRender extends scene {
 
             const texture_d = new Image()
             texture_d.src = that.texUrl.filter(url => {
-                return url.includes((that.mtl.mtl.get(vertices.mtlname) as any).map_d)
+                if (renderObj.mtlConfig.map_d) {
+                    return url.includes(renderObj.mtlConfig.map_d)
+                } else {
+                    return './model/tip.jpg'
+                }
             })[0]
 
-            if (!(that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).map_d) {
+            if (!renderObj.mtlConfig.map_d) {
                 that.Map_d_list.push(cubeTexture)
             } else {
 
@@ -265,22 +290,26 @@ export abstract class sceneRender extends scene {
                 usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
             });
             let temp = [
-                (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).Ns,
-                (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).Ni,
-                (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).d,
-                (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).illum,
-                (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).Ka[0],
-                (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).Ka[1],
-                (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).Ka[2],
-                (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).Kd[0],
-                (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).Kd[1],
-                (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).Kd[2],
-                (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).Ks[0],
-                (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).Ks[1],
-                (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).Ks[2],
-                (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).Ke[0],
-                (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).Ke[1],
-                (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).Ke[2],
+                renderObj.mtlConfig.Ns,
+                renderObj.mtlConfig.Ni,
+                renderObj.mtlConfig.d,
+                renderObj.mtlConfig.illum,
+                renderObj.mtlConfig.Ka[0],
+                renderObj.mtlConfig.Ka[1],
+                renderObj.mtlConfig.Ka[2],
+                0,
+                renderObj.mtlConfig.Kd[0],
+                renderObj.mtlConfig.Kd[1],
+                renderObj.mtlConfig.Kd[2],
+                0,
+                renderObj.mtlConfig.Ks[0],
+                renderObj.mtlConfig.Ks[1],
+                renderObj.mtlConfig.Ks[2],
+                0,
+                renderObj.mtlConfig.Ke[0],
+                renderObj.mtlConfig.Ke[1],
+                renderObj.mtlConfig.Ke[2],
+                0,
             ]
             let array2 = new Float32Array(temp)
             that.device.queue.writeBuffer(
@@ -293,25 +322,23 @@ export abstract class sceneRender extends scene {
 
             that.texConfigList.push(texConfig)
             //顶点数据
-            console.log(that.obj.vertices, that.obj.vertices[count].vertex.byteLength)
+
             const vertexBufferDescriptor: GPUBufferDescriptor = {
-                size: that.obj.vertices[count].vertex.byteLength,
+                size: renderObj.vertex.byteLength,
                 usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
                 mappedAtCreation: true
             };
             const buffer = that.device.createBuffer(vertexBufferDescriptor);
             new Float32Array(buffer.getMappedRange())
-                .set(that.obj.vertices[count].vertex);
+                .set(renderObj.vertex);
             buffer.unmap();
             that.vertexBufferList.push(buffer);
 
-            count++
 
             //设置渲染管线
 
-            that.pipeline.push(this.prePipline(vertices))
+            that.pipeline.push(this.prePipline(renderObj))
         }
-
 
 
         //设置mvp缓存
@@ -351,7 +378,7 @@ export abstract class sceneRender extends scene {
         });
 
         //把所有资源打包进bindgroup
-        that.obj.vertices.forEach((objConfig, index) => {
+        that.renderObjList.forEach((renderObj, index) => {
             const uniformBindGroup = that.device.createBindGroup({
                 layout: that.pipeline[index].getBindGroupLayout(0),
                 entries: [
@@ -423,15 +450,11 @@ export abstract class sceneRender extends scene {
         let that = this
 
         scene.switchFlag = false
-
         requestAnimationFrame(frame);
         function frame() {
-            // that.sceneConfig.objConfig.rotation.x += 0.001;
-            // that.sceneConfig.objConfig.rotation.y += 0.001;
-            // that.sceneConfig.objConfig.rotation.z += 0.001;
-
-
-            if (scene.switchFlag === true) return
+            if (scene.switchFlag === true) {
+                return
+            }
             draw();
             requestAnimationFrame(frame);
         }
@@ -440,12 +463,12 @@ export abstract class sceneRender extends scene {
 
             const [transformationMatrix, rotationMatrix, modelMatrix] = getTransformationMatrix(that.canvas.width / that.canvas.height, that.sceneConfig);
 
-            let res: number[] = [that.sceneConfig.lightConfig.length,0,0,0]
+            let res: number[] = [that.sceneConfig.lightConfig.length, 0, 0, 0]
             for (let i = 0; i < that.sceneConfig.lightConfig.length; i++) {
-                res = [...res, that.sceneConfig.lightConfig[i].type,0,0,0, ...that.sceneConfig.lightConfig[i].color,0, that.sceneConfig.lightConfig[i].position.x, that.sceneConfig.lightConfig[i].position.y, that.sceneConfig.lightConfig[i].position.z,0]
+                res = [...res, that.sceneConfig.lightConfig[i].type, 0, 0, 0, ...that.sceneConfig.lightConfig[i].color, 0, that.sceneConfig.lightConfig[i].position.x, that.sceneConfig.lightConfig[i].position.y, that.sceneConfig.lightConfig[i].position.z, 0]
             }
             let res_ = new Float32Array(res)
-            
+
             that.device.queue.writeBuffer(
                 that.lightConfig as GPUBuffer,
                 0,
@@ -515,12 +538,11 @@ export abstract class sceneRender extends scene {
 
             const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
 
-            that.vertexBufferList.forEach((url, index) => {
-
+            that.renderObjList.forEach((url, index) => {
                 passEncoder.setPipeline(that.pipeline[index]);
                 passEncoder.setBindGroup(0, that.bindGroupList[index]);
                 passEncoder.setVertexBuffer(0, that.vertexBufferList[index]);
-                passEncoder.draw(that.obj.vertices[index].vertexCount, 1, 0, 0);
+                passEncoder.draw(that.renderObjList[index].vertexCount, 1, 0, 0);
             })
 
             passEncoder.end();
@@ -528,11 +550,7 @@ export abstract class sceneRender extends scene {
         }
     }
 
-    private prePipline(vertices: {
-        mtlname: string;
-        vertex: Float32Array;
-        vertexCount: number;
-    }) {
+    private prePipline(renderObj: renderObj) {
         let that = this
         let res: GPURenderPipeline
 
@@ -548,11 +566,11 @@ export abstract class sceneRender extends scene {
                 operation: "add"
             }
         };
-        
-        if ((that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).map_d &&
-            (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).map_Bump &&
-            (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).map_Kd &&
-            (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).map_Ks
+
+        if (renderObj.mtlConfig.map_d &&
+            renderObj.mtlConfig.map_Bump &&
+            renderObj.mtlConfig.map_Kd &&
+            renderObj.mtlConfig.map_Ks
         ) {
             const blendState1: GPUBlendState = {
                 color: {
@@ -621,7 +639,9 @@ export abstract class sceneRender extends scene {
                 },
             });
         }
-        else if ((that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).map_d) {
+        else if (renderObj.mtlConfig.map_d &&
+            renderObj.mtlConfig.map_Kd
+        ) {
             const blendState2: GPUBlendState = {
                 color: {
                     srcFactor: "src-alpha",
@@ -689,9 +709,9 @@ export abstract class sceneRender extends scene {
                 },
             });
         }
-        else if ((that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).map_Bump &&
-            (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).map_Kd &&
-            (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).map_Ks
+        else if (renderObj.mtlConfig.map_Bump &&
+            renderObj.mtlConfig.map_Kd &&
+            renderObj.mtlConfig.map_Ks
         ) {
 
             res = that.device.createRenderPipeline({
@@ -747,7 +767,9 @@ export abstract class sceneRender extends scene {
                 },
             });
         }
-        else {
+        else if (
+            renderObj.mtlConfig.map_Kd
+        ) {
             res = that.device.createRenderPipeline({
                 layout: that.device.createPipelineLayout({ bindGroupLayouts: [that.piplineGroupLayout as GPUBindGroupLayout] }),
                 vertex: {
@@ -781,6 +803,60 @@ export abstract class sceneRender extends scene {
                 fragment: {
                     module: that.device.createShaderModule({
                         code: fragmentShader_Kd,
+                    }),
+                    entryPoint: 'main',
+                    targets: [
+                        {
+                            format: that.presentationFormat as GPUTextureFormat,
+                            blend: blendState
+                        },
+                    ],
+                },
+                primitive: {
+                    topology: 'triangle-list',
+                    // cullMode: 'back',
+                },
+                depthStencil: {
+                    depthWriteEnabled: true,
+                    depthCompare: 'less',
+                    format: 'depth24plus',
+                },
+            });
+        }
+        else {
+            res = that.device.createRenderPipeline({
+                layout: that.device.createPipelineLayout({ bindGroupLayouts: [that.piplineGroupLayout as GPUBindGroupLayout] }),
+                vertex: {
+                    module: that.device.createShaderModule({
+                        code: vertexShader
+                    }),
+                    entryPoint: "main",
+                    buffers: [
+                        {
+                            arrayStride: 32,
+                            attributes: [
+                                {
+                                    shaderLocation: 0,
+                                    format: "float32x3",
+                                    offset: 0
+                                },
+                                {
+                                    shaderLocation: 1,
+                                    format: "float32x2",
+                                    offset: 12
+                                },
+                                {
+                                    shaderLocation: 2,
+                                    format: "float32x3",
+                                    offset: 20
+                                }
+                            ]
+                        }
+                    ]
+                },
+                fragment: {
+                    module: that.device.createShaderModule({
+                        code: fragmentShader,
                     }),
                     entryPoint: 'main',
                     targets: [

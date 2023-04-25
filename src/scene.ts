@@ -3,19 +3,19 @@ import { sceneConfig } from "./interface";
 import { select } from "./interface";
 import { mtl } from "./mtl";
 import { objMesh } from "./obj_mesh";
+import { renderObj } from "./renderObj";
 
 export abstract class scene implements select {
     protected device: GPUDevice
     protected canvas: HTMLCanvasElement
     protected sceneConfig: sceneConfig
-    protected obj: objMesh
-    protected mtl: mtl
+    protected renderObjList: renderObj[]
     protected texUrl: string[]
     protected name: string
     protected static switchFlag: boolean
 
     public abstract switchScene(name: string): Promise<void>
-    public abstract addCube(): void;
+    public abstract addCube(): Promise<void>;
     public abstract addlight(): void;
 
     /**
@@ -60,8 +60,8 @@ export abstract class scene implements select {
             lightConfig: [
                 {
                     pattern: "平行光",
-                    color: [255.0,255.0,255.0],
-                    type:1,
+                    color: [255.0, 255.0, 255.0],
+                    type: 1,
                     position: {
                         x: 0,
                         y: 0,
@@ -70,15 +70,14 @@ export abstract class scene implements select {
                 }
             ]
         }
-        this.obj = new objMesh()
-        this.mtl = new mtl()
+        this.renderObjList = []
         this.texUrl = []
     }
 
     async init(modelUrl: string, mtlUrl: string, texUrl: string[]) {
         this.texUrl = texUrl
-        this.obj = new objMesh()
-        this.mtl = new mtl()
+        let obj = new objMesh()
+        let mtL = new mtl()
         this.sceneConfig = {
             objConfig: {
                 position: {
@@ -112,8 +111,8 @@ export abstract class scene implements select {
             lightConfig: [
                 {
                     pattern: "平行光",
-                    color: [255.0,255.0,255.0],
-                    type:1,
+                    color: [255.0, 255.0, 255.0],
+                    type: 1,
                     position: {
                         x: 0,
                         y: 0,
@@ -122,8 +121,11 @@ export abstract class scene implements select {
                 }
             ]
         }
-        await this.obj.initialize(modelUrl)
-        await this.mtl.initialize(mtlUrl)
+
+        await obj.initialize(modelUrl)
+        await mtL.initialize(mtlUrl)
+
+        this.renderObjList = renderObj.create(obj, mtL)
 
     }
 

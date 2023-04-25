@@ -1,7 +1,3 @@
-@group(0) @binding(1) var mySampler: sampler;
-@group(0) @binding(2) var kdTexture: texture_2d<f32>;
-@group(0) @binding(3) var bumpTexture: texture_2d<f32>;
-@group(0) @binding(4) var ksTexture: texture_2d<f32>;
 @group(0) @binding(9) var dTexture: texture_2d<f32>;
 //物体旋转矩阵
 @group(0) @binding(6) var<uniform> rotationMatrix : mat4x4<f32>;
@@ -46,7 +42,7 @@ fn main(@location(0) pos: vec4<f32>,
   @location(2) nv : vec3<f32>
 ) -> @location(0) vec4<f32> {
 
-    let kd = textureSample(kdTexture, mySampler, uv);
+    let kd = vec4<f32>(texConfig.kd,1.0);
     let ks = vec4<f32>(texConfig.ks,1.0);
 
 

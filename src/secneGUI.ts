@@ -5,7 +5,8 @@ import { tools } from "./tools";
 import * as dat from 'dat.gui';
 import Stats from 'stats.js'
 import { vec3 } from "gl-matrix";
-import { lightConfig } from "./interface";
+import { lightConfig, mtlCongfig } from "./interface";
+import { renderObj } from "./renderObj";
 
 export class sceneGUI extends sceneRender {
 
@@ -62,14 +63,44 @@ export class sceneGUI extends sceneRender {
 
     }
 
-    public addCube(): void{
+    public async addCube(): Promise<void> {
+        scene.switchFlag = true
+
+        let vertex = new Float32Array([
+            1, 1, 0, 0, 0, 0, 0, 1,
+            1, -1, 0, 0, 0, 0, 0, 1,
+            -1, -1, 0, 0, 0, 0, 0, 1,
+
+            -1, -1, 0, 0, 0, 0, 0, 1,
+            -1, 1, 0, 0, 0, 0, 0, 1,
+            1, 1, 0, 0, 0, 0, 0, 1,
+        ])
+        let mtlConfig: mtlCongfig = {
+            Ns: 1000,
+            Ka: [0.5, 0.5, 0.5],
+            Kd: [0.8, 0, 0],
+            Ks: [1, 1, 1],
+            Ke: [0, 0, 0],
+            Ni: 1.45,
+            d: 1,
+            illum: 1,
+        }
+
+
+        let e: renderObj = new renderObj("正方面", vertex, 6, mtlConfig)
+        this.renderObjList.push(e)
+
+        await this.render()
+        console.log(this.renderObjList)
+        this.initController()
+
 
     }
-    public addlight(): void{
-        let e:lightConfig ={
+    public addlight(): void {
+        let e: lightConfig = {
             pattern: "平行光",
-            color: [255.0,255.0,255.0],
-            type:1,
+            color: [255.0, 255.0, 255.0],
+            type: 1,
             position: {
                 x: 0,
                 y: 0,
@@ -77,7 +108,6 @@ export class sceneGUI extends sceneRender {
             }
         }
         this.sceneConfig.lightConfig.push(e)
-        console.log(this.sceneConfig.lightConfig)
         this.initController()
     }
 
@@ -104,8 +134,6 @@ export class sceneGUI extends sceneRender {
         }
 
         requestAnimationFrame(animate);
-
-        console.log("dat")
 
         that.datGUi.destroy()
 
@@ -147,7 +175,7 @@ export class sceneGUI extends sceneRender {
         folder_3.open()
 
         for (let i = 0; i < this.sceneConfig.lightConfig.length; i++) {
-            let folder_3_1 = folder_3.addFolder(`light_${i+1}`)
+            let folder_3_1 = folder_3.addFolder(`light_${i + 1}`)
             const options_1 = ["全局光照", "平行光", "点光源"]
             folder_3_1.add(this.sceneConfig.lightConfig[i], "pattern").options(options_1).onChange(val => {
                 if (val === "平行光") {
@@ -160,8 +188,8 @@ export class sceneGUI extends sceneRender {
                     that.sceneConfig.lightConfig[i].pattern = "全局光照"
                 }
             })
-            folder_3_1.addColor(this.sceneConfig.lightConfig[i],'color').name('灯光颜色');
-            let folder_3_1_1 = folder_3_1.addFolder(`lightPosition_${i+1}`)
+            folder_3_1.addColor(this.sceneConfig.lightConfig[i], 'color').name('灯光颜色');
+            let folder_3_1_1 = folder_3_1.addFolder(`lightPosition_${i + 1}`)
             folder_3_1_1.add(this.sceneConfig.lightConfig[i].position as any, "x", undefined, undefined, 10)
             folder_3_1_1.add(this.sceneConfig.lightConfig[i].position as any, "y", undefined, undefined, 10)
             folder_3_1_1.add(this.sceneConfig.lightConfig[i].position as any, "z", undefined, undefined, 10)

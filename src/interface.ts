@@ -3,8 +3,8 @@ import { vec3 } from "gl-matrix"
 //功能接口
 export interface select {
     switchScene(name: string): Promise<void>
-    addCube():void
-    addlight():void
+    addCube(): Promise<void>
+    addlight(): void
 }
 
 
@@ -24,9 +24,9 @@ type cameraConfig = {
 }
 
 export type lightConfig = {
-    pattern:  "平行光" |"全局光照" | "点光源"
+    pattern: "平行光" | "全局光照" | "点光源"
     type: 1 | 2 | 3
-    color:number[]
+    color: number[]
     position: coords
 }
 
@@ -43,6 +43,17 @@ export type objConfig = {
     rotation: coords
     scale: coords
 }
+
+/**
+ * 用材质区分的带渲染物体
+ */
+export interface renderObj_ {
+    mtlname: string,
+    vertex: Float32Array,
+    vertexCount: number,
+    mtlConfig: mtlCongfig
+}
+
 
 //材质
 export type mtlCongfig = {
@@ -90,6 +101,6 @@ export type mtlCongfig = {
     /**
      * 材质的光照模式。这个值表示了模型所使用的光照模式，比如常见的有“平面照明”、“高光照明”、“镜面反射”等模式。
      */
-    illum:number
+    illum: number
 }
 
