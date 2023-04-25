@@ -6,6 +6,7 @@ import fragmentShader_Kd from './shader/fragment_Kd.wgsl';
 import fragmentShader_Kd_d from './shader/fragment_Kd_d.wgsl';
 import fragmentShader_Kd_Ks_bump_d from './shader/fragment_Kd_Ks_Bump_d.wgsl';
 import { vec3 } from 'gl-matrix';
+import { mtlCongfig } from "./interface";
 
 
 
@@ -16,16 +17,16 @@ export abstract class sceneRender extends scene {
     private Map_Bump_list: GPUTexture[] = []
     private Map_ks_list: GPUTexture[] = []
     private bindGroupList: GPUBindGroup[] = []
-    private context: any
-    private mvpMatrix: any
-    private modelMatrix:any
-    private rotationMatrix: any
-    private depthTexture: any
+    private context: GPUCanvasContext | null =null
+    private mvpMatrix: GPUBuffer | null =null
+    private modelMatrix:GPUBuffer | null =null
+    private rotationMatrix: GPUBuffer | null =null
+    private depthTexture: GPUTexture | null =null
     private pipeline: GPURenderPipeline[] = []
-    private lightVector: any
-    private cameraPos: any
-    private piplineGroupLayout: any
-    private presentationFormat: any
+    private lightVector: GPUBuffer | null =null
+    private cameraPos: GPUBuffer | null =null
+    private piplineGroupLayout: GPUBindGroupLayout | null =null
+    private presentationFormat: GPUTextureFormat | null = null
     private texConfigList: GPUBuffer[] = []
     private Map_d_list: GPUTexture[] = []
     
@@ -134,7 +135,7 @@ export abstract class sceneRender extends scene {
 
         that.context.configure({
             device: that.device,
-            format: that.presentationFormat,
+            format: that.presentationFormat as GPUTextureFormat ,
             alphaMode: 'opaque',
         });
 
@@ -153,7 +154,7 @@ export abstract class sceneRender extends scene {
             //贴图数据
             const texture_Kd = new Image()
             texture_Kd.src = that.texUrl.filter(url => {
-                return url.includes((that.mtl.mtl.get(vertices.mtlname) as any).map_Kd)
+                return url.includes((that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).map_Kd)
             })[0]
             await texture_Kd.decode()
             let imageBitmap = await createImageBitmap(texture_Kd);
@@ -177,7 +178,7 @@ export abstract class sceneRender extends scene {
                 return url.includes((that.mtl.mtl.get(vertices.mtlname) as any).map_Ks)
             })[0]
 
-            if (!(that.mtl.mtl.get(vertices.mtlname) as any).map_Ks) {
+            if (!(that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).map_Ks) {
                 that.Map_ks_list.push(cubeTexture)
             } else {
                 console.log(!!texture_Ks.src, texture_Ks.src)
@@ -205,7 +206,7 @@ export abstract class sceneRender extends scene {
                 return url.includes((that.mtl.mtl.get(vertices.mtlname) as any).map_Bump)
             })[0]
 
-            if (!(that.mtl.mtl.get(vertices.mtlname) as any).map_Bump) {
+            if (!(that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).map_Bump) {
                 that.Map_Bump_list.push(cubeTexture)
             } else {
                 await texture_Bump.decode()
@@ -231,7 +232,7 @@ export abstract class sceneRender extends scene {
                 return url.includes((that.mtl.mtl.get(vertices.mtlname) as any).map_d)
             })[0]
 
-            if (!(that.mtl.mtl.get(vertices.mtlname) as any).map_d) {
+            if (!(that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).map_d) {
                 that.Map_d_list.push(cubeTexture)
             } else {
             
@@ -262,22 +263,22 @@ export abstract class sceneRender extends scene {
                 usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
             });
             let temp = [
-                (that.mtl.mtl.get(vertices.mtlname) as any).Ns,
-                (that.mtl.mtl.get(vertices.mtlname) as any).Ni,
-                (that.mtl.mtl.get(vertices.mtlname) as any).d,
-                (that.mtl.mtl.get(vertices.mtlname) as any).illum,
-                (that.mtl.mtl.get(vertices.mtlname) as any).Ka[0],
-                (that.mtl.mtl.get(vertices.mtlname) as any).Ka[1],
-                (that.mtl.mtl.get(vertices.mtlname) as any).Ka[2],
-                (that.mtl.mtl.get(vertices.mtlname) as any).Kd[0],
-                (that.mtl.mtl.get(vertices.mtlname) as any).Kd[1],
-                (that.mtl.mtl.get(vertices.mtlname) as any).Kd[2],
-                (that.mtl.mtl.get(vertices.mtlname) as any).Ks[0],
-                (that.mtl.mtl.get(vertices.mtlname) as any).Ks[1],
-                (that.mtl.mtl.get(vertices.mtlname) as any).Ks[2],
-                (that.mtl.mtl.get(vertices.mtlname) as any).Ke[0],
-                (that.mtl.mtl.get(vertices.mtlname) as any).Ke[1],
-                (that.mtl.mtl.get(vertices.mtlname) as any).Ke[2],
+                (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).Ns,
+                (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).Ni,
+                (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).d,
+                (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).illum,
+                (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).Ka[0],
+                (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).Ka[1],
+                (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).Ka[2],
+                (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).Kd[0],
+                (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).Kd[1],
+                (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).Kd[2],
+                (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).Ks[0],
+                (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).Ks[1],
+                (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).Ks[2],
+                (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).Ke[0],
+                (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).Ke[1],
+                (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).Ke[2],
             ]
             let array2 = new Float32Array(temp)
             that.device.queue.writeBuffer(
@@ -312,7 +313,7 @@ export abstract class sceneRender extends scene {
 
 
         //设置mvp缓存
-        that.mvpMatrix = that.device.createBuffer({
+        that.mvpMatrix  = that.device.createBuffer({
             size: 4 * 4 * 4,
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
@@ -355,7 +356,7 @@ export abstract class sceneRender extends scene {
                     {
                         binding: 0,
                         resource: {
-                            buffer: that.mvpMatrix,
+                            buffer: that.mvpMatrix as GPUBuffer,
                         }
                     },
                     {
@@ -377,19 +378,19 @@ export abstract class sceneRender extends scene {
                     {
                         binding: 5,
                         resource: {
-                            buffer: that.lightVector,
+                            buffer: that.lightVector as GPUBuffer,
                         }
                     },
                     {
                         binding: 6,
                         resource: {
-                            buffer: that.rotationMatrix,
+                            buffer: that.rotationMatrix as GPUBuffer,
                         }
                     },
                     {
                         binding: 7,
                         resource: {
-                            buffer: that.cameraPos,
+                            buffer: that.cameraPos as GPUBuffer,
                         }
                     },
                     {
@@ -405,7 +406,7 @@ export abstract class sceneRender extends scene {
                     {
                         binding: 10,
                         resource: {
-                            buffer: that.modelMatrix,
+                            buffer: that.modelMatrix as GPUBuffer,
                         }
                     },
                 ],
@@ -446,7 +447,7 @@ export abstract class sceneRender extends scene {
             vec3.subtract(direction, direction, temp)
             let array1 = new Float32Array(direction)
             that.device.queue.writeBuffer(
-                that.lightVector,
+                that.lightVector as GPUBuffer,
                 0,
                 array1.buffer,
                 array1.byteOffset,
@@ -460,7 +461,7 @@ export abstract class sceneRender extends scene {
             ]
             let array2 = new Float32Array(temp)
             that.device.queue.writeBuffer(
-                that.cameraPos,
+                that.cameraPos as GPUBuffer,
                 0,
                 array2.buffer,
                 array2.byteOffset,
@@ -469,7 +470,7 @@ export abstract class sceneRender extends scene {
 
 
             that.device.queue.writeBuffer(
-                that.mvpMatrix,
+                that.mvpMatrix as GPUBuffer,
                 0,
                 transformationMatrix.buffer,
                 transformationMatrix.byteOffset,
@@ -477,7 +478,7 @@ export abstract class sceneRender extends scene {
             );
 
             that.device.queue.writeBuffer(
-                that.modelMatrix,
+                that.modelMatrix as GPUBuffer,
                 0,
                 modelMatrix.buffer,
                 modelMatrix.byteOffset,
@@ -485,7 +486,7 @@ export abstract class sceneRender extends scene {
             );
 
             that.device.queue.writeBuffer(
-                that.rotationMatrix,
+                that.rotationMatrix as GPUBuffer,
                 0,
                 rotationMatrix.buffer,
                 rotationMatrix.byteOffset,
@@ -493,7 +494,7 @@ export abstract class sceneRender extends scene {
             );
 
             const commandEncoder = that.device.createCommandEncoder();
-            const textureView = that.context.getCurrentTexture().createView();
+            const textureView = (that.context as GPUCanvasContext).getCurrentTexture().createView();
 
             const renderPassDescriptor: GPURenderPassDescriptor = {
                 colorAttachments: [
@@ -505,7 +506,7 @@ export abstract class sceneRender extends scene {
                     },
                 ],
                 depthStencilAttachment: {
-                    view: that.depthTexture.createView(),
+                    view: (that.depthTexture as GPUTexture).createView(),
                     depthClearValue: 1.0,
                     depthLoadOp: 'clear',
                     depthStoreOp: 'store',
@@ -527,7 +528,11 @@ export abstract class sceneRender extends scene {
         }
     }
 
-    private prePipline(vertices: any) {
+    private prePipline(vertices: {
+        mtlname: string;
+        vertex: Float32Array;
+        vertexCount: number;
+    }) {
         let that = this
         let res: GPURenderPipeline
 
@@ -545,10 +550,10 @@ export abstract class sceneRender extends scene {
           };
 
         console.log(that.mtl.mtl)
-        if ( (that.mtl.mtl.get(vertices.mtlname) as any).map_d &&
-            (that.mtl.mtl.get(vertices.mtlname) as any).map_Bump &&
-            (that.mtl.mtl.get(vertices.mtlname) as any).map_Kd &&
-            (that.mtl.mtl.get(vertices.mtlname) as any).map_Ks 
+        if ( (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).map_d &&
+            (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).map_Bump &&
+            (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).map_Kd &&
+            (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).map_Ks 
             ) 
             {
                 const blendState1: GPUBlendState = {
@@ -565,7 +570,7 @@ export abstract class sceneRender extends scene {
                   };
 
                 res = that.device.createRenderPipeline({
-                    layout: that.device.createPipelineLayout({ bindGroupLayouts: [that.piplineGroupLayout] }),
+                    layout: that.device.createPipelineLayout({ bindGroupLayouts: [that.piplineGroupLayout as GPUBindGroupLayout] }),
                     vertex: {
                         module: that.device.createShaderModule({
                             code: vertexShader
@@ -601,7 +606,7 @@ export abstract class sceneRender extends scene {
                         entryPoint: 'main',
                         targets: [
                             {
-                                format: that.presentationFormat,
+                                format: that.presentationFormat as GPUTextureFormat,
                                 // blend:blendState1
                             },
                         ],
@@ -618,7 +623,7 @@ export abstract class sceneRender extends scene {
                     },
                 });
         }
-        else if ( (that.mtl.mtl.get(vertices.mtlname) as any).map_d ) 
+        else if ( (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).map_d ) 
             {
                 const blendState2: GPUBlendState = {
                     color: {
@@ -634,7 +639,7 @@ export abstract class sceneRender extends scene {
                   };
 
                 res = that.device.createRenderPipeline({
-                    layout: that.device.createPipelineLayout({ bindGroupLayouts: [that.piplineGroupLayout] }),
+                    layout: that.device.createPipelineLayout({ bindGroupLayouts: [that.piplineGroupLayout as GPUBindGroupLayout] }),
                     vertex: {
                         module: that.device.createShaderModule({
                             code: vertexShader
@@ -670,7 +675,7 @@ export abstract class sceneRender extends scene {
                         entryPoint: 'main',
                         targets: [
                             {
-                                format: that.presentationFormat,
+                                format: that.presentationFormat as GPUTextureFormat,
                                 blend:blendState2
                             },
                         ],
@@ -687,13 +692,13 @@ export abstract class sceneRender extends scene {
                     },
                 });
         }
-        else if ((that.mtl.mtl.get(vertices.mtlname) as any).map_Bump &&
-            (that.mtl.mtl.get(vertices.mtlname) as any).map_Kd &&
-            (that.mtl.mtl.get(vertices.mtlname) as any).map_Ks
+        else if ((that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).map_Bump &&
+            (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).map_Kd &&
+            (that.mtl.mtl.get(vertices.mtlname) as mtlCongfig).map_Ks
         ) {
             
             res = that.device.createRenderPipeline({
-                layout: that.device.createPipelineLayout({ bindGroupLayouts: [that.piplineGroupLayout] }),
+                layout: that.device.createPipelineLayout({ bindGroupLayouts: [that.piplineGroupLayout as GPUBindGroupLayout] }),
                 vertex: {
                     module: that.device.createShaderModule({
                         code: vertexShader
@@ -729,7 +734,7 @@ export abstract class sceneRender extends scene {
                     entryPoint: 'main',
                     targets: [
                         {
-                            format: that.presentationFormat,
+                            format: that.presentationFormat as GPUTextureFormat,
                             blend:blendState
                         },
                     ],
@@ -747,7 +752,7 @@ export abstract class sceneRender extends scene {
         }
         else {
             res = that.device.createRenderPipeline({
-                layout: that.device.createPipelineLayout({ bindGroupLayouts: [that.piplineGroupLayout] }),
+                layout: that.device.createPipelineLayout({ bindGroupLayouts: [that.piplineGroupLayout as GPUBindGroupLayout] }),
                 vertex: {
                     module: that.device.createShaderModule({
                         code: vertexShader
@@ -783,7 +788,7 @@ export abstract class sceneRender extends scene {
                     entryPoint: 'main',
                     targets: [
                         {
-                            format: that.presentationFormat,
+                            format: that.presentationFormat as GPUTextureFormat,
                             blend:blendState
                         },
                     ],
