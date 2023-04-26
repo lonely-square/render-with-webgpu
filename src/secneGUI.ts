@@ -72,15 +72,26 @@ export class sceneGUI extends sceneRender {
     public async addCube(): Promise<void> {
         scene.switchFlag = true
 
-        let vertex = new Float32Array([
-            1, 1, 0, 0, 0, 0, 0, 1,
-            1, -1, 0, 0, 0, 0, 0, 1,
-            -1, -1, 0, 0, 0, 0, 0, 1,
+        // let vertex = new Float32Array([
+        //     1, 1, -1,    0, 0, 0, 0, 1,
+        //     1, -1, -1,    0, 0, 0, 0, 1,
+        //     -1, -1, -1,    0, 0, 0, 0, 1,
 
-            -1, -1, 0, 0, 0, 0, 0, 1,
-            -1, 1, 0, 0, 0, 0, 0, 1,
-            1, 1, 0, 0, 0, 0, 0, 1,
+        //     -1, -1, -1,    0, 0, 0, 0, 1,
+        //     -1, 1, -1,    0, 0, 0, 0, 1,
+        //     1, 1, -1,    0, 0, 0, 0, 1,
+        // ])
+
+        let vertex = new Float32Array([
+            10, -0.8, 10,    0, 0, 0, 0, 1,
+            10, -0.8, -10,    0, 0, 0, 0, 1,
+            -10, -0.8, -10,    0, 0, 0, 0, 1,
+
+            -10, -0.8, -10,    0, 0, 0, 0, 1,
+            -10, -0.8, 10,    0, 0, 0, 0, 1,
+            10,  -0.8, 10,     0, 0, 0, 0, 1,
         ])
+
         let mtlConfig: mtlCongfig = {
             Ns: 1000,
             Ka: [0.5, 0.5, 0.5],
@@ -91,6 +102,8 @@ export class sceneGUI extends sceneRender {
             d: 1,
             illum: 1,
         }
+
+
 
 
         let e: renderObj = new renderObj("正方面", vertex, 6, mtlConfig)
@@ -300,7 +313,7 @@ export class sceneGUI extends sceneRender {
             })
             folder_3_1.addColor(this.sceneConfig.lightConfig[i], 'color').name('灯光颜色');
             let folder_3_1_1 = folder_3_1.addFolder(`lightPosition_${i + 1}`)
-            folder_3_1_1.add(this.sceneConfig.lightConfig[i].position as any, "x", 0.5, 200, 0.5)
+            folder_3_1_1.add(this.sceneConfig.lightConfig[i].position as any, "x", -200, 200, 0.5)
             folder_3_1_1.add(this.sceneConfig.lightConfig[i].position as any, "y", 0.5, 200, 0.5)
             folder_3_1_1.add(this.sceneConfig.lightConfig[i].position as any, "z", 0.5, 200, 0.5)
         }

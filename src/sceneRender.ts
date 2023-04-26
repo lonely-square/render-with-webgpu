@@ -13,9 +13,10 @@ import debugFragment from './shader/debug_fragment.wgsl'
 import vertexShaderShadow from './shader/vertex_shadow.wgsl'
 
 import { renderObj } from "./renderObj";
-
+import { mat4, vec3 } from "gl-matrix";
 
 const shadowDepthTextureSize = 8192;
+
 
 export abstract class sceneRender extends scene {
 
@@ -24,16 +25,25 @@ export abstract class sceneRender extends scene {
     private Map_Bump_list: GPUTexture[] = []
     private Map_ks_list: GPUTexture[] = []
     private bindGroupList: GPUBindGroup[] = []
+
+    //阴影
+    private shadowBindGroup: GPUBindGroup | null = null
+    private shadowDepthTexture: GPUTexture | null = null
+    private shadowPipelineGroupLayout: GPUBindGroupLayout | null = null
+    private shadowPipeline: GPURenderPipeline | null = null
+
     private context: GPUCanvasContext | null = null
     private mvpMatrix: GPUBuffer | null = null
     private modelMatrix: GPUBuffer | null = null
     private rotationMatrix: GPUBuffer | null = null
     private depthTexture: GPUTexture | null = null
     private pipeline: GPURenderPipeline[] = []
-    private skyboxList: GPUTexture[]=[]
+
+    private lightViewProjMatrix: GPUBuffer | null = null
+    private skyboxList: GPUTexture[] = []
     private lightConfig: GPUBuffer | null = null
     private cameraPos: GPUBuffer | null = null
-    private piplineGroupLayout: GPUBindGroupLayout | null = null
+    private pipelineGroupLayout: GPUBindGroupLayout | null = null
     private presentationFormat: GPUTextureFormat | null = null
     private texConfigList: GPUBuffer[] = []
     private Map_d_list: GPUTexture[] = []
@@ -59,7 +69,7 @@ export abstract class sceneRender extends scene {
         this.texConfigList = []
         this.Map_d_list = []
         this.pipeline = []
-        this.skyboxList=[]
+        this.skyboxList = []
         return super.init(modelUrl, mtlUrl, texUrl)
     }
     /**
@@ -74,7 +84,7 @@ export abstract class sceneRender extends scene {
         this.texConfigList = []
         this.Map_d_list = []
         this.pipeline = []
-        this.skyboxList=[]
+        this.skyboxList = []
         await this.prepareResource()
         await this.webGPURender()
     }
@@ -87,7 +97,7 @@ export abstract class sceneRender extends scene {
         that.context = that.canvas.getContext('webgpu') as unknown as GPUCanvasContext;
 
         //设置BindGroupLayout
-        that.piplineGroupLayout = that.device.createBindGroupLayout({
+        that.pipelineGroupLayout = that.device.createBindGroupLayout({
             entries: [
                 {
                     binding: 0,
@@ -158,14 +168,51 @@ export abstract class sceneRender extends scene {
                     binding: 11,
                     visibility: GPUShaderStage.FRAGMENT,
                     texture: {
-                        sampleType: 'float', 
+                        sampleType: 'float',
                         viewDimension: 'cube'
                     }
                 },
+                {
+                    binding: 12,
+                    visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+                    texture: {
+                        sampleType: 'depth',
+                    },
+                },
+                {
+                    binding: 13,
+                    visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+                    sampler: {
+                        type: 'comparison',
+                    },
+                },
+                //变灯光坐标矩阵
+                {
+                    binding: 14,
+                    visibility: GPUShaderStage.VERTEX,
+                    buffer: { type: 'uniform' }
+                }
             ]
 
         });
 
+        that.shadowPipelineGroupLayout = that.device.createBindGroupLayout({
+            entries: [
+                //变世界坐标矩阵
+                {
+                    binding: 0,
+                    visibility: GPUShaderStage.VERTEX,
+                    buffer: { type: 'uniform' }
+                },
+                //变灯光坐标矩阵
+                {
+                    binding: 1,
+                    visibility: GPUShaderStage.VERTEX,
+                    buffer: { type: 'uniform' }
+                }
+            ]
+
+        });
 
         that.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
 
@@ -175,12 +222,18 @@ export abstract class sceneRender extends scene {
             alphaMode: 'opaque',
         });
 
+        //深度 用于阴影
+        that.shadowDepthTexture = that.device.createTexture({
+            size: [shadowDepthTextureSize, shadowDepthTextureSize, 1],
+            usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+            format: 'depth32float',
+        });
 
 
         //设置深度信息
         that.depthTexture = that.device.createTexture({
             size: [that.canvas.width, that.canvas.height],
-            format: 'depth24plus',
+            format: 'depth24plus-stencil8',
             usage: GPUTextureUsage.RENDER_ATTACHMENT,
         });
 
@@ -191,43 +244,43 @@ export abstract class sceneRender extends scene {
             {
                 // The order of the array layers is [+X, -X, +Y, -Y, +Z, -Z]
                 const imgSrcs = [
-                  "./model/skymap/posx.jpg",
-                  "./model/skymap/negx.jpg",
-                  "./model/skymap/posy.jpg",
-                  "./model/skymap/negy.jpg",
-                  "./model/skymap/posz.jpg",
-                  "./model/skymap/negz.jpg",
+                    "./model/skymap/posx.jpg",
+                    "./model/skymap/negx.jpg",
+                    "./model/skymap/posy.jpg",
+                    "./model/skymap/negy.jpg",
+                    "./model/skymap/posz.jpg",
+                    "./model/skymap/negz.jpg",
                 ];
                 const promises = imgSrcs.map((src) => {
-                  const img = document.createElement('img');
-                  img.src = src;
-                  return img.decode().then(() => createImageBitmap(img));
+                    const img = document.createElement('img');
+                    img.src = src;
+                    return img.decode().then(() => createImageBitmap(img));
                 });
                 const imageBitmaps = await Promise.all(promises);
-            
-                cubemapTexture = that.device.createTexture({
-                  dimension: '2d',
-                  // Create a 2d array texture.
-                  // Assume each image has the same size.
-                  size: [imageBitmaps[0].width, imageBitmaps[0].height, 6],
-                  format: 'rgba8unorm',
-                  usage:
-                    GPUTextureUsage.TEXTURE_BINDING |
-                    GPUTextureUsage.COPY_DST |
-                    GPUTextureUsage.RENDER_ATTACHMENT,
-                });
-            
-                for (let i = 0; i < imageBitmaps.length; i++) {
-                  const imageBitmap = imageBitmaps[i];
-                  that.device.queue.copyExternalImageToTexture(
-                    { source: imageBitmap },
-                    { texture: cubemapTexture, origin: [0, 0, i] },
-                    [imageBitmap.width, imageBitmap.height]
-                  );
-                }
-              }
 
-              that.skyboxList.push(cubemapTexture)
+                cubemapTexture = that.device.createTexture({
+                    dimension: '2d',
+                    // Create a 2d array texture.
+                    // Assume each image has the same size.
+                    size: [imageBitmaps[0].width, imageBitmaps[0].height, 6],
+                    format: 'rgba8unorm',
+                    usage:
+                        GPUTextureUsage.TEXTURE_BINDING |
+                        GPUTextureUsage.COPY_DST |
+                        GPUTextureUsage.RENDER_ATTACHMENT,
+                });
+
+                for (let i = 0; i < imageBitmaps.length; i++) {
+                    const imageBitmap = imageBitmaps[i];
+                    that.device.queue.copyExternalImageToTexture(
+                        { source: imageBitmap },
+                        { texture: cubemapTexture, origin: [0, 0, i] },
+                        [imageBitmap.width, imageBitmap.height]
+                    );
+                }
+            }
+
+            that.skyboxList.push(cubemapTexture)
 
 
             //贴图数据
@@ -410,6 +463,51 @@ export abstract class sceneRender extends scene {
             that.pipeline.push(this.prePipline(renderObj))
         }
 
+        //shadow map阴影管道
+        that.shadowPipeline = that.device.createRenderPipeline({
+            layout: that.device.createPipelineLayout({
+                bindGroupLayouts: [
+                    that.shadowPipelineGroupLayout as GPUBindGroupLayout
+                ],
+            }),
+            vertex: {
+                module: that.device.createShaderModule({
+                    code: vertexShaderShadow,
+                }),
+                entryPoint: 'main',
+                buffers: [
+                    {
+                        arrayStride: 32,
+                        attributes: [
+                            {
+                                shaderLocation: 0,
+                                format: "float32x3",
+                                offset: 0
+                            },
+                            {
+                                shaderLocation: 1,
+                                format: "float32x2",
+                                offset: 12
+                            },
+                            {
+                                shaderLocation: 2,
+                                format: "float32x3",
+                                offset: 20
+                            }
+                        ]
+                    }
+                ]
+            },
+            depthStencil: {
+                depthWriteEnabled: true,
+                depthCompare: 'less',
+                format: 'depth32float',
+            },
+            primitive: {
+                topology: 'triangle-list',
+            }
+        });
+
 
         //设置mvp缓存
         that.mvpMatrix = that.device.createBuffer({
@@ -418,6 +516,11 @@ export abstract class sceneRender extends scene {
         });
 
         that.modelMatrix = that.device.createBuffer({
+            size: 4 * 4 * 4,
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        });
+
+        that.lightViewProjMatrix = that.device.createBuffer({
             size: 4 * 4 * 4,
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
@@ -438,7 +541,6 @@ export abstract class sceneRender extends scene {
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
 
-        console.log(that.renderObjList,that.pipeline)
 
 
         //设置采样器
@@ -512,14 +614,49 @@ export abstract class sceneRender extends scene {
                         binding: 11,
                         resource: that.skyboxList[index].createView({
                             dimension: 'cube',
-                          }),
+                        }),
                     },
+                    {
+                        binding: 12,
+                        resource: (that.shadowDepthTexture as GPUTexture).createView(),
+                    },
+                    {
+                        binding: 13,
+                        resource: that.device.createSampler({
+                            compare: 'less',
+                        }),
+                    },
+                    {
+                        binding: 14,
+                        resource: {
+                            buffer: that.lightViewProjMatrix as GPUBuffer,
+                        }
+                    }
                 ],
             });
 
             that.bindGroupList.push(uniformBindGroup);
 
         })
+
+        that.shadowBindGroup = that.device.createBindGroup({
+            layout: that.shadowPipelineGroupLayout,
+            entries: [
+                {
+                    binding: 0,
+                    resource: {
+                        buffer: that.modelMatrix as GPUBuffer,
+                    }
+                },
+                {
+                    binding: 1,
+                    resource: {
+                        buffer: that.lightViewProjMatrix as GPUBuffer,
+                    }
+                }
+            ],
+        });
+
     }
     /**
      * 开始渲染，并在渲染的每一帧调整资源
@@ -552,12 +689,14 @@ export abstract class sceneRender extends scene {
 
             const lightProjectionMatrix = mat4.create();
             {
+
                 const left = -10;
                 const right = 10;
                 const bottom = -10;
                 const top = 10;
                 const near = -100;
                 const far = 180;
+
                 mat4.ortho(lightProjectionMatrix, left, right, bottom, top, near, far);
             }
             const lightViewProjMatrix = mat4.create();
@@ -627,6 +766,8 @@ export abstract class sceneRender extends scene {
             const commandEncoder = that.device.createCommandEncoder();
             const textureView = (that.context as GPUCanvasContext).getCurrentTexture().createView();
 
+
+
             const renderPassDescriptor: GPURenderPassDescriptor = {
                 colorAttachments: [
                     {
@@ -638,6 +779,20 @@ export abstract class sceneRender extends scene {
                 ],
                 depthStencilAttachment: {
                     view: (that.depthTexture as GPUTexture).createView(),
+
+                    depthClearValue: 1.0,
+                    depthLoadOp: 'clear',
+                    depthStoreOp: 'store',
+                    stencilClearValue: 0,
+                    stencilLoadOp: 'clear',
+                    stencilStoreOp: 'store',
+                },
+            };
+
+            const shadowPassDescriptor: GPURenderPassDescriptor = {
+                colorAttachments: [],
+                depthStencilAttachment: {
+                    view: (that.shadowDepthTexture as GPUTexture).createView(),
                     depthClearValue: 1.0,
                     depthLoadOp: 'clear',
                     depthStoreOp: 'store',
@@ -663,9 +818,10 @@ export abstract class sceneRender extends scene {
                 passEncoder.setBindGroup(0, that.bindGroupList[index]);
                 passEncoder.setVertexBuffer(0, that.vertexBufferList[index]);
                 passEncoder.draw(that.renderObjList[index].vertexCount, 1, 0, 0);
-            })
 
+            })
             passEncoder.end();
+
             that.device.queue.submit([commandEncoder.finish()]);
         }
     }
@@ -690,9 +846,9 @@ export abstract class sceneRender extends scene {
             }
         };
 
-        if(renderObj.mtlname === "天空盒"){
+        if (renderObj.mtlname === "天空盒") {
             res = that.device.createRenderPipeline({
-                layout: that.device.createPipelineLayout({ bindGroupLayouts: [that.piplineGroupLayout as GPUBindGroupLayout] }),
+                layout: that.device.createPipelineLayout({ bindGroupLayouts: [that.pipelineGroupLayout as GPUBindGroupLayout] }),
                 vertex: {
                     module: that.device.createShaderModule({
                         code: vertexShader
@@ -740,11 +896,10 @@ export abstract class sceneRender extends scene {
                 depthStencil: {
                     depthWriteEnabled: true,
                     depthCompare: 'less',
-                    format: 'depth24plus',
+                    format: 'depth24plus-stencil8',
                 },
             });
         }
-
         else if (renderObj.mtlname === "debug") {
             res = that.device.createRenderPipeline({
                 layout: that.device.createPipelineLayout({ bindGroupLayouts: [that.pipelineGroupLayout as GPUBindGroupLayout] }),
@@ -816,7 +971,7 @@ export abstract class sceneRender extends scene {
             };
 
             res = that.device.createRenderPipeline({
-                layout: that.device.createPipelineLayout({ bindGroupLayouts: [that.piplineGroupLayout as GPUBindGroupLayout] }),
+                layout: that.device.createPipelineLayout({ bindGroupLayouts: [that.pipelineGroupLayout as GPUBindGroupLayout] }),
                 vertex: {
                     module: that.device.createShaderModule({
                         code: vertexShader
@@ -856,6 +1011,9 @@ export abstract class sceneRender extends scene {
                             // blend:blendState1
                         },
                     ],
+                    // constants: {
+                    //     shadowDepthTextureSize,
+                    // },
                 },
                 primitive: {
                     topology: 'triangle-list',
@@ -865,7 +1023,7 @@ export abstract class sceneRender extends scene {
                 depthStencil: {
                     depthWriteEnabled: true,
                     depthCompare: 'less',
-                    format: 'depth24plus',
+                    format: 'depth24plus-stencil8',
                 },
             });
         }
@@ -886,7 +1044,7 @@ export abstract class sceneRender extends scene {
             };
 
             res = that.device.createRenderPipeline({
-                layout: that.device.createPipelineLayout({ bindGroupLayouts: [that.piplineGroupLayout as GPUBindGroupLayout] }),
+                layout: that.device.createPipelineLayout({ bindGroupLayouts: [that.pipelineGroupLayout as GPUBindGroupLayout] }),
                 vertex: {
                     module: that.device.createShaderModule({
                         code: vertexShader
@@ -926,6 +1084,9 @@ export abstract class sceneRender extends scene {
                             blend: blendState2
                         },
                     ],
+                    // constants: {
+                    //     shadowDepthTextureSize,
+                    // },
                 },
                 primitive: {
                     topology: 'triangle-list',
@@ -935,7 +1096,7 @@ export abstract class sceneRender extends scene {
                 depthStencil: {
                     depthWriteEnabled: true,
                     depthCompare: 'less',
-                    format: 'depth24plus',
+                    format: 'depth24plus-stencil8',
                 },
             });
         }
@@ -945,7 +1106,7 @@ export abstract class sceneRender extends scene {
         ) {
 
             res = that.device.createRenderPipeline({
-                layout: that.device.createPipelineLayout({ bindGroupLayouts: [that.piplineGroupLayout as GPUBindGroupLayout] }),
+                layout: that.device.createPipelineLayout({ bindGroupLayouts: [that.pipelineGroupLayout as GPUBindGroupLayout] }),
                 vertex: {
                     module: that.device.createShaderModule({
                         code: vertexShader
@@ -985,6 +1146,9 @@ export abstract class sceneRender extends scene {
                             blend: blendState
                         },
                     ],
+                    // constants: {
+                    //     shadowDepthTextureSize,
+                    //   },
                 },
                 primitive: {
                     topology: 'triangle-list',
@@ -993,7 +1157,7 @@ export abstract class sceneRender extends scene {
                 depthStencil: {
                     depthWriteEnabled: true,
                     depthCompare: 'less',
-                    format: 'depth24plus',
+                    format: 'depth24plus-stencil8',
                 },
             });
         }
@@ -1001,7 +1165,7 @@ export abstract class sceneRender extends scene {
             renderObj.mtlConfig.map_Kd
         ) {
             res = that.device.createRenderPipeline({
-                layout: that.device.createPipelineLayout({ bindGroupLayouts: [that.piplineGroupLayout as GPUBindGroupLayout] }),
+                layout: that.device.createPipelineLayout({ bindGroupLayouts: [that.pipelineGroupLayout as GPUBindGroupLayout] }),
                 vertex: {
                     module: that.device.createShaderModule({
                         code: vertexShader
@@ -1041,6 +1205,9 @@ export abstract class sceneRender extends scene {
                             blend: blendState
                         },
                     ],
+                    // constants: {
+                    //     shadowDepthTextureSize,
+                    //   },
                 },
                 primitive: {
                     topology: 'triangle-list',
@@ -1049,13 +1216,13 @@ export abstract class sceneRender extends scene {
                 depthStencil: {
                     depthWriteEnabled: true,
                     depthCompare: 'less',
-                    format: 'depth24plus',
+                    format: 'depth24plus-stencil8',
                 },
             });
         }
         else {
             res = that.device.createRenderPipeline({
-                layout: that.device.createPipelineLayout({ bindGroupLayouts: [that.piplineGroupLayout as GPUBindGroupLayout] }),
+                layout: that.device.createPipelineLayout({ bindGroupLayouts: [that.pipelineGroupLayout as GPUBindGroupLayout] }),
                 vertex: {
                     module: that.device.createShaderModule({
                         code: vertexShader
@@ -1092,9 +1259,11 @@ export abstract class sceneRender extends scene {
                     targets: [
                         {
                             format: that.presentationFormat as GPUTextureFormat,
-                            blend: blendState
                         },
                     ],
+                    // constants: {
+                    //     shadowDepthTextureSize,
+                    //   },
                 },
                 primitive: {
                     topology: 'triangle-list',
@@ -1103,7 +1272,7 @@ export abstract class sceneRender extends scene {
                 depthStencil: {
                     depthWriteEnabled: true,
                     depthCompare: 'less',
-                    format: 'depth24plus',
+                    format: 'depth24plus-stencil8',
                 },
             });
         }
