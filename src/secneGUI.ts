@@ -69,15 +69,26 @@ export class sceneGUI extends sceneRender {
     public async addCube(): Promise<void> {
         scene.switchFlag = true
 
-        let vertex = new Float32Array([
-            1, 1, 0, 0, 0, 0, 0, 1,
-            1, -1, 0, 0, 0, 0, 0, 1,
-            -1, -1, 0, 0, 0, 0, 0, 1,
+        // let vertex = new Float32Array([
+        //     1, 1, -1,    0, 0, 0, 0, 1,
+        //     1, -1, -1,    0, 0, 0, 0, 1,
+        //     -1, -1, -1,    0, 0, 0, 0, 1,
 
-            -1, -1, 0, 0, 0, 0, 0, 1,
-            -1, 1, 0, 0, 0, 0, 0, 1,
-            1, 1, 0, 0, 0, 0, 0, 1,
+        //     -1, -1, -1,    0, 0, 0, 0, 1,
+        //     -1, 1, -1,    0, 0, 0, 0, 1,
+        //     1, 1, -1,    0, 0, 0, 0, 1,
+        // ])
+
+        let vertex = new Float32Array([
+            10, -0.8, 10,    0, 0, 0, 0, 1,
+            10, -0.8, -10,    0, 0, 0, 0, 1,
+            -10, -0.8, -10,    0, 0, 0, 0, 1,
+
+            -10, -0.8, -10,    0, 0, 0, 0, 1,
+            -10, -0.8, 10,    0, 0, 0, 0, 1,
+            10,  -0.8, 10,     0, 0, 0, 0, 1,
         ])
+
         let mtlConfig: mtlCongfig = {
             Ns: 1000,
             Ka: [0.5, 0.5, 0.5],
@@ -88,6 +99,8 @@ export class sceneGUI extends sceneRender {
             d: 1,
             illum: 1,
         }
+
+
 
 
         let e: renderObj = new renderObj("正方面", vertex, 6, mtlConfig)

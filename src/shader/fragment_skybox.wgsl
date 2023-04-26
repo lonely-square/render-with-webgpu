@@ -1,3 +1,5 @@
+
+
 @group(0) @binding(1) var mySampler: sampler;
 @group(0) @binding(9) var dTexture: texture_2d<f32>;
 //物体旋转矩阵
@@ -8,6 +10,10 @@
 @group(0) @binding(8) var<uniform> texConfig : TexConfig;
 
 @group(0) @binding(11) var skyTexture: texture_cube<f32>;
+
+//阴影
+@group(0) @binding(12) var shadowMap: texture_depth_2d;
+@group(0) @binding(13) var shadowSampler: sampler_comparison;
 
 struct TexConfig{
    //
@@ -44,7 +50,8 @@ fn main(
     @location(1) uv: vec2<f32>,
     //法线
     @location(2) nv : vec3<f32>,
-    @location(3) pos2 : vec3<f32>
+    @location(3) modelPos : vec3<f32>,
+    @location(4) shadowPos : vec3<f32>
 ) -> @location(0) vec4<f32> {
 
     let kd = vec4<f32>(texConfig.kd,1.0);
@@ -78,5 +85,5 @@ fn main(
     }
     
     var cubemapVec = pos.xyz - vec3(0.5);
-    return textureSample( skyTexture,  mySampler, pos2);
+    return textureSample( skyTexture,  mySampler, modelPos);
 }

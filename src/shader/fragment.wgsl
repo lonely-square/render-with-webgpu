@@ -1,3 +1,5 @@
+
+
 @group(0) @binding(9) var dTexture: texture_2d<f32>;
 //物体旋转矩阵
 @group(0) @binding(6) var<uniform> rotationMatrix : mat4x4<f32>;
@@ -5,6 +7,10 @@
 @group(0) @binding(7) var<uniform> cameraPos : vec3<f32>;
 //材质参数
 @group(0) @binding(8) var<uniform> texConfig : TexConfig;
+
+//阴影
+@group(0) @binding(12) var shadowMap: texture_depth_2d;
+@group(0) @binding(13) var shadowSampler: sampler_comparison;
 
 struct TexConfig{
    //
@@ -39,11 +45,31 @@ struct light_{
 fn main(@location(0) pos: vec4<f32>, 
   @location(1) uv: vec2<f32>,
   //法线
-  @location(2) nv : vec3<f32>
+  @location(2) nv : vec3<f32>,
+  @location(4) shadowPos : vec3<f32>
 ) -> @location(0) vec4<f32> {
 
     let kd = vec4<f32>(texConfig.kd,1.0);
     let ks = vec4<f32>(texConfig.ks,1.0);
+
+
+    //阴影
+    var visibility = 0.0;
+    let oneOverShadowDepthTextureSize = 0.0001 / 10240000.0;
+
+    // for (var y = -1; y <= 1; y++) {
+    //   for (var x = -1; x <= 1; x++) {
+    //     let offset = vec2<f32>(vec2(x, y)) * oneOverShadowDepthTextureSize;
+        visibility += textureSampleCompare(
+        shadowMap, shadowSampler,
+        shadowPos.xy , shadowPos.z
+        );
+    //   }
+    // }
+
+    return vec4(visibility);
+    visibility /= 9.0;
+
 
 
     //世界坐标的法线
@@ -72,5 +98,11 @@ fn main(@location(0) pos: vec4<f32>,
       saturate(pow(b,texConfig.Ns)*ks*vec4<f32>(lightcolor,1.0));
     }
     
-    return res;
+    let lightcolor =lightConfig.light[0].color/vec3<f32>(255.0);
+    let lightDirection = vec3<f32>(0.0)-lightConfig.light[0].positon;
+    let a=dot(vec4<f32>(-normalize(lightDirection),1.0),vec4<f32>(n,1.0))-1;
+    const ambientFactor = 0.2;
+    let lightingFactor = min(ambientFactor + visibility * a, 1.0);
+
+    return res*lightingFactor;
 }
