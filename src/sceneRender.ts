@@ -7,10 +7,15 @@ import fragmentShader_Kd_d from './shader/fragment_Kd_d.wgsl';
 import fragmentShader_Kd_Ks_bump_d from './shader/fragment_Kd_Ks_Bump_d.wgsl';
 import fragmentShader from './shader/fragment.wgsl'
 import fragmentShader_skybox from './shader/fragment_skybox.wgsl'
-import { mtlCongfig } from "./interface";
+
+import debugVertex from './shader/debug_vertex.wgsl'
+import debugFragment from './shader/debug_fragment.wgsl'
+import vertexShaderShadow from './shader/vertex_shadow.wgsl'
+
 import { renderObj } from "./renderObj";
 
 
+const shadowDepthTextureSize = 8192;
 
 export abstract class sceneRender extends scene {
 
@@ -535,6 +540,37 @@ export abstract class sceneRender extends scene {
 
             const [transformationMatrix, rotationMatrix, modelMatrix] = getTransformationMatrix(that.canvas.width / that.canvas.height, that.sceneConfig);
 
+            const upVector = vec3.fromValues(0, 1, 0);
+            const origin = vec3.fromValues(0, 0, 0);
+
+            const lightPosition = vec3.fromValues(
+                that.sceneConfig.lightConfig[0].position.x,
+                that.sceneConfig.lightConfig[0].position.y,
+                that.sceneConfig.lightConfig[0].position.z);
+            const lightViewMatrix = mat4.create();
+            mat4.lookAt(lightViewMatrix, lightPosition, origin, upVector);
+
+            const lightProjectionMatrix = mat4.create();
+            {
+                const left = -10;
+                const right = 10;
+                const bottom = -10;
+                const top = 10;
+                const near = -100;
+                const far = 180;
+                mat4.ortho(lightProjectionMatrix, left, right, bottom, top, near, far);
+            }
+            const lightViewProjMatrix = mat4.create();
+            mat4.multiply(lightViewProjMatrix, lightProjectionMatrix, lightViewMatrix);
+            const lightMatrixData = lightViewProjMatrix as Float32Array;
+            that.device.queue.writeBuffer(
+                that.lightViewProjMatrix as GPUBuffer,
+                0,
+                lightMatrixData.buffer,
+                lightMatrixData.byteOffset,
+                lightMatrixData.byteLength
+            );
+
             let res: number[] = [that.sceneConfig.lightConfig.length, 0, 0, 0]
             for (let i = 0; i < that.sceneConfig.lightConfig.length; i++) {
                 res = [...res, that.sceneConfig.lightConfig[i].type, 0, 0, 0, ...that.sceneConfig.lightConfig[i].color, 0, that.sceneConfig.lightConfig[i].position.x, that.sceneConfig.lightConfig[i].position.y, that.sceneConfig.lightConfig[i].position.z, 0]
@@ -607,6 +643,18 @@ export abstract class sceneRender extends scene {
                     depthStoreOp: 'store',
                 },
             };
+
+
+            const shadowPass = commandEncoder.beginRenderPass(shadowPassDescriptor);
+            that.renderObjList.forEach((url, index) => {
+                if(index < that.renderObjList.length-1){
+                    shadowPass.setPipeline(that.shadowPipeline as GPURenderPipeline);
+                    shadowPass.setBindGroup(0, that.shadowBindGroup as GPUBindGroup);
+                    shadowPass.setVertexBuffer(0, that.vertexBufferList[index]);
+                    shadowPass.draw(that.renderObjList[index].vertexCount, 1, 0, 0);
+                }
+            })
+            shadowPass.end();
 
             const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
 
@@ -696,7 +744,60 @@ export abstract class sceneRender extends scene {
                 },
             });
         }
-        else if(renderObj.mtlConfig.map_d &&
+
+        else if (renderObj.mtlname === "debug") {
+            res = that.device.createRenderPipeline({
+                layout: that.device.createPipelineLayout({ bindGroupLayouts: [that.pipelineGroupLayout as GPUBindGroupLayout] }),
+                vertex: {
+                    module: that.device.createShaderModule({
+                        code: debugVertex
+                    }),
+                    entryPoint: "main",
+                    buffers: [
+                        {
+                            arrayStride: 32,
+                            attributes: [
+                                {
+                                    shaderLocation: 0,
+                                    format: "float32x3",
+                                    offset: 0
+                                },
+                                {
+                                    shaderLocation: 1,
+                                    format: "float32x2",
+                                    offset: 12
+                                },
+                                {
+                                    shaderLocation: 2,
+                                    format: "float32x3",
+                                    offset: 20
+                                }
+                            ]
+                        }
+                    ]
+                },
+                fragment: {
+                    module: that.device.createShaderModule({
+                        code: debugFragment,
+                    }),
+                    entryPoint: 'main',
+                    targets: [
+                        {
+                            format: that.presentationFormat as GPUTextureFormat
+                        },
+                    ],
+                },
+                primitive: {
+                    topology: 'triangle-list',
+                },
+                depthStencil: {
+                    depthWriteEnabled: false,
+                    depthCompare: 'always',
+                    format: 'depth24plus-stencil8',
+                },
+            });
+        }
+        else if (renderObj.mtlConfig.map_d &&
             renderObj.mtlConfig.map_Bump &&
             renderObj.mtlConfig.map_Kd &&
             renderObj.mtlConfig.map_Ks

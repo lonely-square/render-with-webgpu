@@ -60,8 +60,11 @@ export class sceneGUI extends sceneRender {
            
             
         }
-        // await this.render()
+
+        await this.render() 
+        await this.addCube()
         await this.addskybox()
+        await this.addDebugCube()
         this.initController()
 
     }
@@ -97,6 +100,40 @@ export class sceneGUI extends sceneRender {
         
         this.initController()
 
+
+    }
+
+    public async addDebugCube(): Promise<void> {
+        scene.switchFlag = true
+
+        let vertex = new Float32Array([
+            1, 1, -1,    0, 0, 0, 0, 1,
+            1, -1, -1,    0, 0, 0, 0, 1,
+            -1, -1, -1,    0, 0, 0, 0, 1,
+
+            -1, -1, -1,    0, 0, 0, 0, 1,
+            -1, 1, -1,    0, 0, 0, 0, 1,
+            1, 1, -1,    0, 0, 0, 0, 1,
+        ])
+
+
+        let mtlConfig: mtlCongfig = {
+            Ns: 1000,
+            Ka: [0.5, 0.5, 0.5],
+            Kd: [0.8, 0, 0],
+            Ks: [1, 1, 1],
+            Ke: [0, 0, 0],
+            Ni: 1.45,
+            d: 1,
+            illum: 1,
+        }
+
+
+        let e: renderObj = new renderObj("debug", vertex, 6, mtlConfig)
+        this.renderObjList.push(e)
+
+        await this.render()
+        this.initController()
 
     }
 
@@ -263,9 +300,9 @@ export class sceneGUI extends sceneRender {
             })
             folder_3_1.addColor(this.sceneConfig.lightConfig[i], 'color').name('灯光颜色');
             let folder_3_1_1 = folder_3_1.addFolder(`lightPosition_${i + 1}`)
-            folder_3_1_1.add(this.sceneConfig.lightConfig[i].position as any, "x", undefined, undefined, 10)
-            folder_3_1_1.add(this.sceneConfig.lightConfig[i].position as any, "y", undefined, undefined, 10)
-            folder_3_1_1.add(this.sceneConfig.lightConfig[i].position as any, "z", undefined, undefined, 10)
+            folder_3_1_1.add(this.sceneConfig.lightConfig[i].position as any, "x", 0.5, 200, 0.5)
+            folder_3_1_1.add(this.sceneConfig.lightConfig[i].position as any, "y", 0.5, 200, 0.5)
+            folder_3_1_1.add(this.sceneConfig.lightConfig[i].position as any, "z", 0.5, 200, 0.5)
         }
 
         let folder_4 = that.datGUi.addFolder("材质")
