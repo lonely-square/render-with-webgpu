@@ -1,6 +1,7 @@
 @group(0) @binding(0) var<uniform> mvp : mat4x4<f32>;
 @group(0) @binding(10) var<uniform> m : mat4x4<f32>;
 @group(0) @binding(14) var<uniform> lm : mat4x4<f32>;
+@group(0) @binding(15) var<uniform> modelMat : mat4x4<f32>;
 
 struct vertexOutput{
     @builtin(position) position : vec4<f32>,
@@ -15,16 +16,16 @@ struct vertexOutput{
 fn main(@builtin(vertex_index) index : u32 ,
         @location(0) position : vec3<f32>,
         @location(1) uv : vec2<f32>,
-        @location(2) nv : vec3<f32>
+        @location(2) nv : vec3<f32>,
  ) -> vertexOutput {
 
-  let posFromLight = lm * m * vec4(position, 1.0);
+  let posFromLight = lm * m * modelMat *vec4(position, 1.0);
 
   var a: vertexOutput;
   //裁剪坐标
-  a.position = mvp*vec4<f32>(position,1.0);
+  a.position = mvp * modelMat * vec4<f32>(position,1.0);
   //世界坐标
-  a.pos= m*vec4<f32>(position,1.0);
+  a.pos=  m* modelMat *vec4<f32>(position,1.0);
   //模型坐标
   a.modelPos=position;
   //灯光坐标下的深度

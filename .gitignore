@@ -1,6 +1,7 @@
 node_modules
 dist/*
 .vscode
+.idea
 
 !dist/index.html
 !dist/theme.css

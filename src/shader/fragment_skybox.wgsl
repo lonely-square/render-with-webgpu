@@ -41,7 +41,7 @@ struct lightConfig_{
 struct light_{
   type_: f32,
   color: vec3<f32>,
-  positon: vec3<f32>,
+  positon: vec3<f32>
 }
 
 @fragment
@@ -52,38 +52,14 @@ fn main(
     @location(2) nv : vec3<f32>,
     @location(3) modelPos : vec3<f32>,
     @location(4) shadowPos : vec3<f32>
+    
 ) -> @location(0) vec4<f32> {
 
-    let kd = vec4<f32>(texConfig.kd,1.0);
-    let ks = vec4<f32>(texConfig.ks,1.0);
+    var pos1 =modelPos;
+    pos1.x-=cameraPos.x;
+    pos1.y-=cameraPos.y;
+    pos1.z-=cameraPos.z;
 
 
-    //世界坐标的法线
-    let n1=rotationMatrix*vec4<f32>(normalize(nv),1.0);
-    let n=vec3<f32>(n1[0],n1[1],n1[2]);
-
-    var res=vec4<f32>(0.0);
-    for(var i=0u;i<u32(lightConfig.count);i++){
-      //灯光
-      let lightcolor =lightConfig.light[i].color/vec3<f32>(255.0);
-      let lightDirection = vec3<f32>(0.0)-lightConfig.light[i].positon;
-      var reflection_dir=normalize(reflect(normalize(lightDirection), n));
-
-      if( dot(lightDirection, n) >= 0.0) {
-         reflection_dir= vec3<f32>(0.0,0.0,0.0);
-      };
-      
-      //a漫反射角度系数
-      let a=dot(vec4<f32>(-normalize(lightDirection),1.0),vec4<f32>(n,1.0))-1;
-      //b镜面反射角度系数
-      let b= dot(reflection_dir,normalize(cameraPos-vec3<f32>(pos[0],pos[1],pos[2])));
-
-      res=res+
-      vec4<f32>(0.1,0.1,0.1,1.0)*vec4<f32>( vec4<f32>(lightcolor,1.0)*kd )+
-      saturate(a*vec4<f32>(lightcolor,1.0)*kd)+
-      saturate(pow(b,texConfig.Ns)*ks*vec4<f32>(lightcolor,1.0));
-    }
-    
-    var cubemapVec = pos.xyz - vec3(0.5);
-    return textureSample( skyTexture,  mySampler, modelPos);
+    return textureSample( skyTexture,  mySampler, pos1);
 }

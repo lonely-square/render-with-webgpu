@@ -65,7 +65,7 @@ fn main(@location(0) pos: vec4<f32>,
         let offset = vec2<f32>(vec2(x, y)) * oneOverShadowDepthTextureSize;
         visibility += textureSampleCompare(
         shadowMap, shadowSampler,
-        shadowPos.xy + offset, shadowPos.z - 0.007
+        shadowPos.xy + offset, shadowPos.z - 0.00007
         );
       }
     }

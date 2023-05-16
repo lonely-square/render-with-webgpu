@@ -1,9 +1,9 @@
 import { vec3 } from "gl-matrix";
-import { mtlCongfig } from "./interface";
+import { mtlCongfig as MtlCongfig } from "./interface";
 
-export class mtl {
+export class Mtl {
 
-    mtl: Map<string,mtlCongfig>=new Map
+    mtl: Map<string,MtlCongfig>=new Map
 
 
     async initialize(url: string) {

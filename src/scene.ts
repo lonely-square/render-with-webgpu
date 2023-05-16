@@ -1,8 +1,8 @@
 import { vec3 } from "gl-matrix";
 import { sceneConfig } from "./interface";
 import { select } from "./interface";
-import { mtl } from "./mtl";
-import { objMesh } from "./obj_mesh";
+import { Mtl } from "./mtl";
+import { ObjMesh } from "./objMesh";
 import { renderObj } from "./renderObj";
 
 export abstract class scene implements select {
@@ -11,19 +11,16 @@ export abstract class scene implements select {
     protected sceneConfig: sceneConfig
     protected renderObjList: renderObj[]
     protected texUrl: string[]
-    protected name: string
+    public name: string
     protected static switchFlag: boolean
 
     public abstract switchScene(name: string): Promise<void>
-    public abstract addCube(): Promise<void>;
-    public abstract addlight(): void;
 
     /**
      * 创建一个场景实例
      * @param device WebGPU设备对象
      */
     constructor(device: GPUDevice, canvas: HTMLCanvasElement) {
-        scene.switchFlag = false
         this.device = device
         this.canvas = canvas
         this.name = ""
@@ -32,7 +29,7 @@ export abstract class scene implements select {
                 position: {
                     x: 0,
                     y: 0,
-                    z: -1.5
+                    z: 0
                 },
                 scale: {
                     x: 1,
@@ -76,14 +73,14 @@ export abstract class scene implements select {
 
     async init(modelUrl: string, mtlUrl: string, texUrl: string[]) {
         this.texUrl = texUrl
-        let obj = new objMesh()
-        let mtL = new mtl()
+        let obj = new ObjMesh()
+        let mtL = new Mtl()
         this.sceneConfig = {
             objConfig: {
                 position: {
                     x: 0,
                     y: 0,
-                    z: -1.5
+                    z: 0
                 },
                 scale: {
                     x: 1,
@@ -124,7 +121,6 @@ export abstract class scene implements select {
 
         await obj.initialize(modelUrl)
         await mtL.initialize(mtlUrl)
-
         this.renderObjList = renderObj.create(obj, mtL)
 
     }

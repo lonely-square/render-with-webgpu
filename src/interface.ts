@@ -1,12 +1,16 @@
 import { vec3 } from "gl-matrix"
 
 //功能接口
+export interface Scene_ extends select,change{}
+
 export interface select {
     switchScene(name: string): Promise<void>
+}
+
+export interface change{
     addCube(): Promise<void>
     addlight(): void
 }
-
 
 
 //场景参数
@@ -48,10 +52,11 @@ export type objConfig = {
  * 用材质区分的带渲染物体
  */
 export interface renderObj_ {
-    mtlname: string,
+    mtlName: string,
     vertex: Float32Array,
     vertexCount: number,
-    mtlConfig: mtlCongfig
+    mtlConfig: mtlCongfig,
+    objConfig: objConfig,
 }
 
 

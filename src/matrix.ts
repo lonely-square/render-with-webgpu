@@ -1,12 +1,12 @@
 
 import { mat4, vec3 } from 'gl-matrix';
-import { sceneConfig } from './interface';
+import { objConfig as ObjConfig, sceneConfig } from './interface';
 
-export function getTransformationMatrix(aspect: number, sceneConfig:sceneConfig): Float32Array[] {
+export function getTransformationMatrix(aspect: number, objConfig:ObjConfig,sceneConfig:sceneConfig): Float32Array[] {
 
-  let position = sceneConfig.objConfig.position
-  let rotation = sceneConfig.objConfig.rotation
-  let scale = sceneConfig.objConfig.scale
+  let position = objConfig.position
+  let rotation = objConfig.rotation
+  let scale = objConfig.scale
 
   let camPosition = sceneConfig.cameraConfig.position
   let camRotation = sceneConfig.cameraConfig.rotation

@@ -1,6 +1,6 @@
 import { vec2, vec3 } from 'gl-matrix'
 //模型类，存储模型的各种坐标信息
-export class objMesh {
+export class ObjMesh {
 
     /**
      * 顶点
@@ -16,12 +16,16 @@ export class objMesh {
     vn: vec3[]
     vertices: { "mtlname": string, 'vertex': Float32Array, 'vertexCount': number }[]
 
+    max:number
+    minY:number
 
     constructor() {
         this.v = []
         this.vn = []
         this.vt = []
         this.vertices = []
+        this.max = 0
+        this.minY =Infinity
     }
 
     async initialize(url: string) {
@@ -30,7 +34,7 @@ export class objMesh {
     }
 
     async readFile(url: string) {
-        var result: number[] = [];
+        let result: number[] = [];
 
         const response: Response = await fetch(url)
         const blob: Blob = await response.blob()
@@ -76,12 +80,14 @@ export class objMesh {
     read_vertex_data(line: string) {
 
         const components = line.split(" ");
-        // ["v", "x", "y", "z"]
         const new_vertex: vec3 = [
             Number(components[1]).valueOf(),
             Number(components[2]).valueOf(),
             Number(components[3]).valueOf()
         ];
+        let maxTemp = Math.max(...new_vertex.slice(0,3))
+        if(maxTemp > this.max) this.max =maxTemp
+        if(new_vertex[1] < this.minY) this.minY = new_vertex[1]
 
         this.v.push(new_vertex);
     }
@@ -123,7 +129,7 @@ export class objMesh {
         */
 
         const triangle_count = vertex_descriptions.length - 3; // accounting also for "f"
-        for (var i = 0; i < triangle_count; i++) {
+        for (let i = 0; i < triangle_count; i++) {
             //corner a
             this.read_corner(vertex_descriptions[1], result);
             this.read_corner(vertex_descriptions[2 + i], result);

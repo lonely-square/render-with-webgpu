@@ -27,13 +27,14 @@ export abstract class sceneRender extends scene {
     private bindGroupList: GPUBindGroup[] = []
 
     //阴影
-    private shadowBindGroup: GPUBindGroup | null = null
+    private shadowBindGroupList: GPUBindGroup [] = []
     private shadowDepthTexture: GPUTexture | null = null
     private shadowPipelineGroupLayout: GPUBindGroupLayout | null = null
     private shadowPipeline: GPURenderPipeline | null = null
 
     private context: GPUCanvasContext | null = null
     private mvpMatrix: GPUBuffer | null = null
+    private mvpMatrixList: GPUBuffer[] = []
     private modelMatrix: GPUBuffer | null = null
     private rotationMatrix: GPUBuffer | null = null
     private depthTexture: GPUTexture | null = null
@@ -50,8 +51,6 @@ export abstract class sceneRender extends scene {
 
 
     abstract switchScene(name: string): Promise<void>
-    public abstract addCube(): Promise<void>;
-    public abstract addlight(): void;
 
     /**
      * 初始化场景里的渲染资源
@@ -70,6 +69,8 @@ export abstract class sceneRender extends scene {
         this.Map_d_list = []
         this.pipeline = []
         this.skyboxList = []
+        this.mvpMatrixList =[]
+        this.shadowBindGroupList =[]
         return super.init(modelUrl, mtlUrl, texUrl)
     }
     /**
@@ -85,6 +86,8 @@ export abstract class sceneRender extends scene {
         this.Map_d_list = []
         this.pipeline = []
         this.skyboxList = []
+        this.mvpMatrixList =[]
+        this.shadowBindGroupList =[]
         await this.prepareResource()
         await this.webGPURender()
     }
@@ -150,7 +153,10 @@ export abstract class sceneRender extends scene {
                 {
                     binding: 8,
                     visibility: GPUShaderStage.FRAGMENT,
-                    buffer: { type: 'uniform' }
+                    buffer: {
+                        type: 'uniform',
+                        hasDynamicOffset: false
+                    }
                 },
                 {
                     binding: 9,
@@ -191,7 +197,12 @@ export abstract class sceneRender extends scene {
                     binding: 14,
                     visibility: GPUShaderStage.VERTEX,
                     buffer: { type: 'uniform' }
-                }
+                },
+                {
+                    binding: 15,
+                    visibility: GPUShaderStage.VERTEX,
+                    buffer: { type: 'uniform' }
+                },
             ]
 
         });
@@ -209,7 +220,12 @@ export abstract class sceneRender extends scene {
                     binding: 1,
                     visibility: GPUShaderStage.VERTEX,
                     buffer: { type: 'uniform' }
-                }
+                },
+                {
+                    binding: 2,
+                    visibility: GPUShaderStage.VERTEX,
+                    buffer: { type: 'uniform' }
+                },
             ]
 
         });
@@ -412,36 +428,7 @@ export abstract class sceneRender extends scene {
                 size: 4 * 20,
                 usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
             });
-            let temp = [
-                renderObj.mtlConfig.Ns,
-                renderObj.mtlConfig.Ni,
-                renderObj.mtlConfig.d,
-                renderObj.mtlConfig.illum,
-                renderObj.mtlConfig.Ka[0],
-                renderObj.mtlConfig.Ka[1],
-                renderObj.mtlConfig.Ka[2],
-                0,
-                renderObj.mtlConfig.Kd[0],
-                renderObj.mtlConfig.Kd[1],
-                renderObj.mtlConfig.Kd[2],
-                0,
-                renderObj.mtlConfig.Ks[0],
-                renderObj.mtlConfig.Ks[1],
-                renderObj.mtlConfig.Ks[2],
-                0,
-                renderObj.mtlConfig.Ke[0],
-                renderObj.mtlConfig.Ke[1],
-                renderObj.mtlConfig.Ke[2],
-                0,
-            ]
-            let array2 = new Float32Array(temp)
-            that.device.queue.writeBuffer(
-                texConfig,
-                0,
-                array2.buffer,
-                array2.byteOffset,
-                array2.byteLength
-            );
+            
 
             that.texConfigList.push(texConfig)
             //顶点数据
@@ -457,6 +444,12 @@ export abstract class sceneRender extends scene {
             buffer.unmap();
             that.vertexBufferList.push(buffer);
 
+            //每个mvp矩阵
+
+            that.mvpMatrixList.push(that.device.createBuffer({
+                size: 4 * 4 * 4,
+                usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+            }))
 
             //设置渲染管线
 
@@ -631,31 +624,46 @@ export abstract class sceneRender extends scene {
                         resource: {
                             buffer: that.lightViewProjMatrix as GPUBuffer,
                         }
-                    }
+                    },
+                    {
+                        binding: 15,
+                        resource: {
+                            buffer: that.mvpMatrixList[index] as GPUBuffer,
+                        }
+                    },
                 ],
-            });
+            })
 
-            that.bindGroupList.push(uniformBindGroup);
+            const shadowBindGroup = that.device.createBindGroup({
+                layout: that.shadowPipelineGroupLayout as GPUBindGroupLayout,
+                entries: [
+                    {
+                        binding: 0,
+                        resource: {
+                            buffer: that.modelMatrix as GPUBuffer,
+                        }
+                    },
+                    {
+                        binding: 1,
+                        resource: {
+                            buffer: that.lightViewProjMatrix as GPUBuffer,
+                        }
+                    },
+                    {
+                        binding: 2,
+                        resource: {
+                            buffer: that.mvpMatrixList[index] as GPUBuffer,
+                        }
+                    },
+                ],
+            })
+
+            that.bindGroupList.push(uniformBindGroup)
+            that.shadowBindGroupList.push(shadowBindGroup)
 
         })
 
-        that.shadowBindGroup = that.device.createBindGroup({
-            layout: that.shadowPipelineGroupLayout,
-            entries: [
-                {
-                    binding: 0,
-                    resource: {
-                        buffer: that.modelMatrix as GPUBuffer,
-                    }
-                },
-                {
-                    binding: 1,
-                    resource: {
-                        buffer: that.lightViewProjMatrix as GPUBuffer,
-                    }
-                }
-            ],
-        });
+
 
     }
     /**
@@ -675,7 +683,53 @@ export abstract class sceneRender extends scene {
 
         function draw() {
 
-            const [transformationMatrix, rotationMatrix, modelMatrix] = getTransformationMatrix(that.canvas.width / that.canvas.height, that.sceneConfig);
+            //渲染前调整
+            {
+                that.renderObjList.forEach((renderObj, index) => {
+                    
+                    const [transformationMatrix, rotationMatrix, modelMatrix] = getTransformationMatrix(that.canvas.width / that.canvas.height, renderObj.objConfig, that.sceneConfig);
+
+                    that.device.queue.writeBuffer(
+                        that.mvpMatrixList[index],
+                        0,
+                        modelMatrix.buffer,
+                        modelMatrix.byteOffset,
+                        modelMatrix.byteLength
+                    );
+
+                    let temp = [
+                        renderObj.mtlConfig.Ns,
+                        renderObj.mtlConfig.Ni,
+                        renderObj.mtlConfig.d,
+                        renderObj.mtlConfig.illum,
+                        renderObj.mtlConfig.Ka[0],
+                        renderObj.mtlConfig.Ka[1],
+                        renderObj.mtlConfig.Ka[2],
+                        0,
+                        renderObj.mtlConfig.Kd[0],
+                        renderObj.mtlConfig.Kd[1],
+                        renderObj.mtlConfig.Kd[2],
+                        0,
+                        renderObj.mtlConfig.Ks[0],
+                        renderObj.mtlConfig.Ks[1],
+                        renderObj.mtlConfig.Ks[2],
+                        0,
+                        renderObj.mtlConfig.Ke[0],
+                        renderObj.mtlConfig.Ke[1],
+                        renderObj.mtlConfig.Ke[2],
+                        0,
+                    ]
+                    let array2 = new Float32Array(temp)
+                    that.device.queue.writeBuffer(
+                        that.texConfigList[index],
+                        0,
+                        array2.buffer,
+                        array2.byteOffset,
+                        array2.byteLength
+                    );
+                })
+                
+            const [transformationMatrix, rotationMatrix, modelMatrix] = getTransformationMatrix(that.canvas.width / that.canvas.height,that.sceneConfig.objConfig, that.sceneConfig);
 
             const upVector = vec3.fromValues(0, 1, 0);
             const origin = vec3.fromValues(0, 0, 0);
@@ -686,6 +740,7 @@ export abstract class sceneRender extends scene {
                 that.sceneConfig.lightConfig[0].position.z);
             const lightViewMatrix = mat4.create();
             mat4.lookAt(lightViewMatrix, lightPosition, origin, upVector);
+
 
             const lightProjectionMatrix = mat4.create();
             {
@@ -763,6 +818,10 @@ export abstract class sceneRender extends scene {
                 rotationMatrix.byteLength
             );
 
+            }
+
+            //开始渲染
+            {
             const commandEncoder = that.device.createCommandEncoder();
             const textureView = (that.context as GPUCanvasContext).getCurrentTexture().createView();
 
@@ -802,9 +861,9 @@ export abstract class sceneRender extends scene {
 
             const shadowPass = commandEncoder.beginRenderPass(shadowPassDescriptor);
             that.renderObjList.forEach((url, index) => {
-                if(index < that.renderObjList.length-1){
+                if (index < that.renderObjList.length - 1) {
                     shadowPass.setPipeline(that.shadowPipeline as GPURenderPipeline);
-                    shadowPass.setBindGroup(0, that.shadowBindGroup as GPUBindGroup);
+                    shadowPass.setBindGroup(0, that.shadowBindGroupList[index] as GPUBindGroup);
                     shadowPass.setVertexBuffer(0, that.vertexBufferList[index]);
                     shadowPass.draw(that.renderObjList[index].vertexCount, 1, 0, 0);
                 }
@@ -823,6 +882,8 @@ export abstract class sceneRender extends scene {
             passEncoder.end();
 
             that.device.queue.submit([commandEncoder.finish()]);
+
+            }
         }
     }
 
@@ -846,7 +907,7 @@ export abstract class sceneRender extends scene {
             }
         };
 
-        if (renderObj.mtlname === "天空盒") {
+        if (renderObj.mtlName === "天空盒") {
             res = that.device.createRenderPipeline({
                 layout: that.device.createPipelineLayout({ bindGroupLayouts: [that.pipelineGroupLayout as GPUBindGroupLayout] }),
                 vertex: {
@@ -900,7 +961,7 @@ export abstract class sceneRender extends scene {
                 },
             });
         }
-        else if (renderObj.mtlname === "debug") {
+        else if (renderObj.mtlName === "debug") {
             res = that.device.createRenderPipeline({
                 layout: that.device.createPipelineLayout({ bindGroupLayouts: [that.pipelineGroupLayout as GPUBindGroupLayout] }),
                 vertex: {
