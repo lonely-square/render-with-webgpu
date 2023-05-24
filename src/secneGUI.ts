@@ -26,28 +26,31 @@ export class sceneGUI extends sceneRender implements change {
         scene.switchFlag = true
         if (name === "lantern") {
 
-            await this.init("./model/lantern/lantern.obj", "./model/lantern/灯笼.mtl", ["./model/lantern/tex/000001B95523DFF8.jpg", "./model/lantern/tex/000001B955240538.jpg"]);
+            await this.init("./model/lantern/lantern.obj", "./model/lantern/灯笼.mtl", 
+            [
+                {name:"000001B95523DFF8.jpg",url:"./model/lantern/tex/000001B95523DFF8.jpg"},
+                {name:"000001B955240538.jpg",url:"./model/lantern/tex/000001B955240538.jpg"}]);
 
         }
         if (name === "girl") {
 
             await this.init("./model/Bunny Girl/Bunny Girl.obj", "./model/Bunny Girl/Bunny Girl.mtl", [
-                "./model/Bunny Girl/textures/S_9000_eyeshade_col.tga.png",
-                "./model/Bunny Girl/textures/s_9000_FC_col.tga.png",
-                "./model/Bunny Girl/textures/S_9000_FC_mask.tga.png",
-                "./model/Bunny Girl/textures/s_9000_FC_nml.tga.png",
-                "./model/Bunny Girl/textures/S_9000_HR_col2.tga.png",
-                "./model/Bunny Girl/textures/S_9000_HR_mask.tga.png",
-                "./model/Bunny Girl/textures/S_9000_HR_nml.tga.png",
-                "./model/Bunny Girl/textures/S_9009_BD_col.tga.png",
-                "./model/Bunny Girl/textures/S_9009_BD_mask.tga.png",
-                "./model/Bunny Girl/textures/S_9009_BD_nml.tga.png",
-                "./model/Bunny Girl/textures/S_9009_HD_col2.tga.png",
-                "./model/Bunny Girl/textures/S_9009_HD_mask.tga.png",
-                "./model/Bunny Girl/textures/S_9009_HD_nml.tga.png",
-                "./model/Bunny Girl/textures/S_9009_PART_col.tga.png",
-                "./model/Bunny Girl/textures/S_9009_PART_mask.tga.png",
-                "./model/Bunny Girl/textures/S_9009_PART_nml.tga.png"
+                {name:"S_9000_eyeshade_col.tga.png",url:"./model/Bunny Girl/textures/S_9000_eyeshade_col.tga.png"},
+                {name:"s_9000_FC_col.tga.png",url:"./model/Bunny Girl/textures/s_9000_FC_col.tga.png"},
+                {name:"S_9000_FC_mask.tga.png",url:"./model/Bunny Girl/textures/S_9000_FC_mask.tga.png"},
+                {name:"s_9000_FC_nml.tga.png",url:"./model/Bunny Girl/textures/s_9000_FC_nml.tga.png"},
+                {name:"S_9000_HR_col2.tga.png",url:"./model/Bunny Girl/textures/S_9000_HR_col2.tga.png"},
+                {name:"S_9000_HR_mask.tga.png",url:"./model/Bunny Girl/textures/S_9000_HR_mask.tga.png"},
+                {name:"S_9000_HR_nml.tga.png",url:"./model/Bunny Girl/textures/S_9000_HR_nml.tga.png"},
+                {name:"S_9009_BD_col.tga.png",url:"./model/Bunny Girl/textures/S_9009_BD_col.tga.png"},
+                {name:"S_9009_BD_mask.tga.png",url:"./model/Bunny Girl/textures/S_9009_BD_mask.tga.png"},
+                {name:"S_9009_BD_nml.tga.png",url:"./model/Bunny Girl/textures/S_9009_BD_nml.tga.png"},
+                {name:"S_9009_HD_col2.tga.png",url:"./model/Bunny Girl/textures/S_9009_HD_col2.tga.png"},
+                {name:"S_9009_HD_mask.tga.png",url:"./model/Bunny Girl/textures/S_9009_HD_mask.tga.png"},
+                {name:"S_9009_HD_nml.tga.png",url:"./model/Bunny Girl/textures/S_9009_HD_nml.tga.png"},
+                {name:"S_9009_PART_col.tga.png",url:"./model/Bunny Girl/textures/S_9009_PART_col.tga.png"},
+                {name:"S_9009_PART_mask.tga.png",url:"./model/Bunny Girl/textures/S_9009_PART_mask.tga.png"},
+                {name:"S_9009_PART_nml.tga.png",url:"./model/Bunny Girl/textures/S_9009_PART_nml.tga.png"}
             ]);
 
         }
@@ -58,6 +61,32 @@ export class sceneGUI extends sceneRender implements change {
         await this.addDebugCube()
         this.initController()
 
+    }
+
+    async addModel(name: string,objInput: HTMLInputElement, mtlInput: HTMLInputElement, texInput: HTMLInputElement) {
+        if(!objInput.files || !mtlInput.files || !texInput.files){
+            return
+        }
+        
+        const objFile = objInput.files[0]; // 获取文件
+        const mtlFile = mtlInput.files[0]; // 获取文件
+        const texFilelist = texInput.files; // 获取文件
+        let objUrl = URL.createObjectURL(objFile);
+        let mtlUrl = URL.createObjectURL(mtlFile);
+        let texUrl = [] 
+        for(let i=0;i<texFilelist.length;i++){
+            texUrl.push({name:texFilelist[i].name,url:URL.createObjectURL(texFilelist[i])});
+        }
+        this.name = name
+        scene.switchFlag = true
+
+        await this.init(objUrl,mtlUrl,texUrl)
+        await this.render()
+        await this.addCube()
+        await this.addskybox()
+        await this.addDebugCube()
+        this.initController()
+       
     }
 
     public async addCube(): Promise<void> {
@@ -74,13 +103,13 @@ export class sceneGUI extends sceneRender implements change {
         // ])
 
         let vertex = new Float32Array([
-            10, 0, 10, 0, 0, 0, 0, 1,
-            10, 0, -10, 0, 0, 0, 0, 1,
-            -10, 0, -10, 0, 0, 0, 0, 1,
+            8, 0, 8, 0, 0, 0, 0, 1,
+            8, 0, -8, 0, 0, 0, 0, 1,
+            -8, 0, -8, 0, 0, 0, 0, 1,
 
-            -10, 0, -10, 0, 0, 0, 0, 1,
-            -10, 0, 10, 0, 0, 0, 0, 1,
-            10, 0, 10, 0, 0, 0, 0, 1,
+            -8, 0, -8, 0, 0, 0, 0, 1,
+            -8, 0, 8, 0, 0, 0, 0, 1,
+            8, 0, 8, 0, 0, 0, 0, 1,
         ])
 
         let mtlConfig: mtlCongfig = {
@@ -332,12 +361,12 @@ export class sceneGUI extends sceneRender implements change {
                 folder_1_1.add(this.renderObjList[i].objConfig.position as any, "x", undefined, undefined, 0.01)
                 folder_1_1.add(this.renderObjList[i].objConfig.position as any, "y", undefined, undefined, 0.01)
                 folder_1_1.add(this.renderObjList[i].objConfig.position as any, "z", undefined, undefined, 0.01)
-    
+
                 let folder_1_2 = folder_4_2.addFolder(`objRotation_${i + 1}`)
                 folder_1_2.add(this.renderObjList[i].objConfig.rotation as any, "x", undefined, undefined, 0.01)
                 folder_1_2.add(this.renderObjList[i].objConfig.rotation as any, "y", undefined, undefined, 0.01)
                 folder_1_2.add(this.renderObjList[i].objConfig.rotation as any, "z", undefined, undefined, 0.01)
-    
+
                 let folder_1_3 = folder_4_2.addFolder(`objScale_${i + 1}`)
                 folder_1_3.add(this.renderObjList[i].objConfig.scale as any, "x", undefined, undefined, 0.01)
                 folder_1_3.add(this.renderObjList[i].objConfig.scale as any, "y", undefined, undefined, 0.01)

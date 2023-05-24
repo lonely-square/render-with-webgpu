@@ -59,7 +59,7 @@ export abstract class sceneRender extends scene {
      * @param texUrl 
      * @returns 
      */
-    init(modelUrl: string, mtlUrl: string, texUrl: string[]): Promise<void> {
+    init(modelUrl: string, mtlUrl: string, texUrl: {name:string,url:string}[]): Promise<void> {
         this.vertexBufferList = []
         this.Map_kd_list = []
         this.Map_Bump_list = []
@@ -89,6 +89,7 @@ export abstract class sceneRender extends scene {
         this.mvpMatrixList =[]
         this.shadowBindGroupList =[]
         await this.prepareResource()
+        scene.switchFlag = false
         await this.webGPURender()
     }
     /**
@@ -302,13 +303,14 @@ export abstract class sceneRender extends scene {
             //贴图数据
             const texture_Kd = new Image()
 
-            texture_Kd.src = that.texUrl.filter(url => {
+
+            texture_Kd.src = that.texUrl.filter(url => {     
                 if (renderObj.mtlConfig.map_Kd) {
-                    return url.includes(renderObj.mtlConfig.map_Kd)
+                    return url.name.includes(renderObj.mtlConfig.map_Kd)
                 } else {
                     return './model/tip.jpg'
                 }
-            })[0]
+            })[0].url
 
             await texture_Kd.decode()
             let imageBitmap = await createImageBitmap(texture_Kd);
@@ -330,11 +332,11 @@ export abstract class sceneRender extends scene {
             const texture_Ks = new Image()
             texture_Ks.src = that.texUrl.filter(url => {
                 if (renderObj.mtlConfig.map_Ks) {
-                    return url.includes(renderObj.mtlConfig.map_Ks)
+                    return url.name.includes(renderObj.mtlConfig.map_Ks)
                 } else {
                     return './model/tip.jpg'
                 }
-            })[0]
+            })[0].url
 
             if (!renderObj.mtlConfig.map_Ks) {
                 that.Map_ks_list.push(cubeTexture)
@@ -362,11 +364,11 @@ export abstract class sceneRender extends scene {
             const texture_Bump = new Image()
             texture_Bump.src = that.texUrl.filter(url => {
                 if (renderObj.mtlConfig.map_Bump) {
-                    return url.includes(renderObj.mtlConfig.map_Bump)
+                    return url.name.includes(renderObj.mtlConfig.map_Bump)
                 } else {
                     return './model/tip.jpg'
                 }
-            })[0]
+            })[0].url
 
             if (!renderObj.mtlConfig.map_Bump) {
                 that.Map_Bump_list.push(cubeTexture)
@@ -392,11 +394,11 @@ export abstract class sceneRender extends scene {
             const texture_d = new Image()
             texture_d.src = that.texUrl.filter(url => {
                 if (renderObj.mtlConfig.map_d) {
-                    return url.includes(renderObj.mtlConfig.map_d)
+                    return url.name.includes(renderObj.mtlConfig.map_d)
                 } else {
                     return './model/tip.jpg'
                 }
-            })[0]
+            })[0].url
 
             if (!renderObj.mtlConfig.map_d) {
                 that.Map_d_list.push(cubeTexture)
@@ -671,7 +673,6 @@ export abstract class sceneRender extends scene {
      */
     private async webGPURender() {
         let that = this
-        scene.switchFlag = false
         requestAnimationFrame(frame);
         function frame() {
             if (scene.switchFlag === true) {
@@ -742,15 +743,16 @@ export abstract class sceneRender extends scene {
             mat4.lookAt(lightViewMatrix, lightPosition, origin, upVector);
 
 
+            let dis = 15
             const lightProjectionMatrix = mat4.create();
             {
 
-                const left = -10;
-                const right = 10;
-                const bottom = -10;
-                const top = 10;
-                const near = -100;
-                const far = 180;
+                const left = -dis;
+                const right = dis;
+                const bottom = -dis;
+                const top = dis;
+                const near = -200;
+                const far = 300;
 
                 mat4.ortho(lightProjectionMatrix, left, right, bottom, top, near, far);
             }

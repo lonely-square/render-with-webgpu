@@ -10,7 +10,7 @@ export abstract class scene implements select {
     protected canvas: HTMLCanvasElement
     protected sceneConfig: sceneConfig
     protected renderObjList: renderObj[]
-    protected texUrl: string[]
+    protected texUrl: {name:string,url:string}[]
     public name: string
     protected static switchFlag: boolean
 
@@ -71,7 +71,7 @@ export abstract class scene implements select {
         this.texUrl = []
     }
 
-    async init(modelUrl: string, mtlUrl: string, texUrl: string[]) {
+    async init(modelUrl: string, mtlUrl: string, texUrl: {name:string,url:string}[]) {
         this.texUrl = texUrl
         let obj = new ObjMesh()
         let mtL = new Mtl()
@@ -118,7 +118,6 @@ export abstract class scene implements select {
                 }
             ]
         }
-
         await obj.initialize(modelUrl)
         await mtL.initialize(mtlUrl)
         this.renderObjList = renderObj.create(obj, mtL)

@@ -45,7 +45,6 @@ export class renderObj implements renderObj_ {
             renderObj.normalizeModelSize(newRenderObj,objMesh)
             res.push(newRenderObj)
         })
-        console.log(res)
         return res
     }
 

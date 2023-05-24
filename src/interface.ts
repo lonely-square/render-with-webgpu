@@ -10,6 +10,7 @@ export interface select {
 export interface change{
     addCube(): Promise<void>
     addlight(): void
+    addModel(name: string,objInput:HTMLInputElement,mtlInput:HTMLInputElement,texInput:HTMLInputElement): Promise<void>
 }
 
 

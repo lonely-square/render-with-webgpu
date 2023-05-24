@@ -23,6 +23,19 @@
       </select>
 
       <div>
+         <form enctype="multipart/form-data">
+            obj文件:
+            <input type="file" id="objInput" name="fileToUpload"><br>
+            mtl文件:
+            <input type="file" id="mtlInput" name="fileToUpload"><br>
+            贴图文件:
+            <input type="file" id="texInput" name="fileToUpload" multiple="multiple"><br>
+            <button type="button" id="subButton">上传模型</button>
+          </form>
+          
+      </div>
+
+      <div>
          <button id="addCubeButton">添加正方面</button>
          <button id="addLightButton">添加光源</button>
       </div>
