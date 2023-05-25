@@ -22,7 +22,7 @@ export class renderObj implements renderObj_ {
             position: {
                 x: 0,
                 y: 0,
-                z: -1.5
+                z: 0
             },
             scale: {
                 x: 1,

@@ -97,7 +97,7 @@ export abstract class scene implements select {
                 position: {
                     x: 0,
                     y: 1.84,
-                    z: 2.2
+                    z: 4.2
                 },
                 rotation: {
                     x: -0.4,

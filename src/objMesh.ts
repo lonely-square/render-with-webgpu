@@ -45,6 +45,7 @@ export class ObjMesh {
 
         lines.forEach(
             (line) => {
+                line = line.replace(/[\r\n]/g, "");
                 if (line[0] == "v" && line[1] == " ") {
                     this.read_vertex_data(line);
                 }
@@ -61,8 +62,8 @@ export class ObjMesh {
                         this.vertices.push(a);
                         result = [];
                     }
-                    const mtl = line.split(" ");
-                    mtlName = mtl[1].replace(/\r/g, "");
+                    const mtl = line.split(/ +/g);
+                    mtlName = mtl[1];
                     mtlCount++;
                 }
                 else if (line[0] == "f") {
@@ -79,7 +80,7 @@ export class ObjMesh {
 
     read_vertex_data(line: string) {
 
-        const components = line.split(" ");
+        const components = line.split(/ +/g);
         const new_vertex: vec3 = [
             Number(components[1]).valueOf(),
             Number(components[2]).valueOf(),
@@ -94,7 +95,7 @@ export class ObjMesh {
 
     read_texcoord_data(line: string) {
 
-        const components = line.split(" ");
+        const components = line.split(/ +/g);
         // ["vt", "u", "v"]
         const new_texcoord: vec2 = [
             Number(components[1]).valueOf(),
@@ -106,7 +107,7 @@ export class ObjMesh {
 
     read_normal_data(line: string) {
 
-        const components = line.split(" ");
+        const components = line.split(/ +/g);
         // ["vn", "nx", "ny", "nz"]
         const new_normal: vec3 = [
             Number(components[1]).valueOf(),
@@ -119,14 +120,9 @@ export class ObjMesh {
 
     read_face_data(line: string, result: number[]) {
 
-        line = line.replace("\n", "");
-        const vertex_descriptions = line.split(" ");
-        // ["f", "v1", "v2", ...]
-        /*
-            triangle fan setup, eg.
-            v1 v2 v3 v4 => (v1, v2, v3), (v1, v3, v4)
-            no. of triangles = no. of vertices - 2
-        */
+        
+        let vertex_descriptions = line.split(/ +/g);
+        vertex_descriptions = vertex_descriptions.filter((item) => item !== '');
 
         const triangle_count = vertex_descriptions.length - 3; // accounting also for "f"
         for (let i = 0; i < triangle_count; i++) {
