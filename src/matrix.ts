@@ -41,5 +41,14 @@ export function getTransformationMatrix(aspect: number, objConfig:ObjConfig,scen
   mat4.rotateY(rotationMatrix, rotationMatrix, rotation.y)
   mat4.rotateZ(rotationMatrix, rotationMatrix, rotation.z)
 
-  return [modelViewProjectionMatrix as Float32Array,rotationMatrix as Float32Array,modelMatrix as Float32Array];
+  const vp = mat4.create();
+  mat4.multiply(vp, projectionMatrix, cameraMatrix)
+
+  /**
+   * mvp
+   * 单m中的旋转
+   * 单m
+   * vp
+   */
+  return [modelViewProjectionMatrix as Float32Array,rotationMatrix as Float32Array,modelMatrix as Float32Array,vp as Float32Array ];
 }

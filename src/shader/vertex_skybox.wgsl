@@ -1,7 +1,10 @@
 @group(0) @binding(0) var<uniform> mvp : mat4x4<f32>;
+//世界坐标
 @group(0) @binding(10) var<uniform> m : mat4x4<f32>;
 @group(0) @binding(14) var<uniform> lm : mat4x4<f32>;
+//物体坐标
 @group(0) @binding(15) var<uniform> modelMat : mat4x4<f32>;
+@group(0) @binding(16) var<uniform> vp: mat4x4<f32>;
 
 struct vertexOutput{
     @builtin(position) position : vec4<f32>,
@@ -23,7 +26,7 @@ fn main(@builtin(vertex_index) index : u32 ,
 
   var a: vertexOutput;
   //裁剪坐标
-  a.position = mvp * modelMat * vec4<f32>(position,1.0);
+  a.position = vp * modelMat * vec4<f32>(position,1.0);
   //世界坐标
   a.pos=  m* modelMat *vec4<f32>(position,1.0);
   //模型坐标

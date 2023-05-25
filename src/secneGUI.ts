@@ -113,7 +113,7 @@ export class sceneGUI extends sceneRender implements change {
         ])
 
         let mtlConfig: mtlCongfig = {
-            Ns: 1000,
+            Ns: 10,
             Ka: [0.5, 0.5, 0.5],
             Kd: [200, 0, 0],
             Ks: [1, 1, 1],

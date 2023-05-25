@@ -1,6 +1,7 @@
 import { scene } from "./scene";
 import { getTransformationMatrix } from './matrix'
 import vertexShader from './shader/vertex_01.wgsl';
+import vertexShader_skybox from './shader/vertex_skybox.wgsl';
 import fragmentShader_Kd_Ks_bump from './shader/fragment_Kd_Ks_Bump.wgsl';
 import fragmentShader_Kd from './shader/fragment_Kd.wgsl';
 import fragmentShader_Kd_d from './shader/fragment_Kd_d.wgsl';
@@ -34,6 +35,7 @@ export abstract class sceneRender extends scene {
 
     private context: GPUCanvasContext | null = null
     private mvpMatrix: GPUBuffer | null = null
+    private vpMatrix: GPUBuffer | null = null
     private mvpMatrixList: GPUBuffer[] = []
     private modelMatrix: GPUBuffer | null = null
     private rotationMatrix: GPUBuffer | null = null
@@ -201,6 +203,11 @@ export abstract class sceneRender extends scene {
                 },
                 {
                     binding: 15,
+                    visibility: GPUShaderStage.VERTEX,
+                    buffer: { type: 'uniform' }
+                },
+                {
+                    binding: 16,
                     visibility: GPUShaderStage.VERTEX,
                     buffer: { type: 'uniform' }
                 },
@@ -510,6 +517,11 @@ export abstract class sceneRender extends scene {
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
 
+        that.vpMatrix = that.device.createBuffer({
+            size: 4 * 4 * 4,
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        });
+
         that.modelMatrix = that.device.createBuffer({
             size: 4 * 4 * 4,
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
@@ -633,6 +645,12 @@ export abstract class sceneRender extends scene {
                             buffer: that.mvpMatrixList[index] as GPUBuffer,
                         }
                     },
+                    {
+                        binding: 16,
+                        resource: {
+                            buffer: that.vpMatrix as GPUBuffer,
+                        }
+                    },
                 ],
             })
 
@@ -730,7 +748,7 @@ export abstract class sceneRender extends scene {
                     );
                 })
                 
-            const [transformationMatrix, rotationMatrix, modelMatrix] = getTransformationMatrix(that.canvas.width / that.canvas.height,that.sceneConfig.objConfig, that.sceneConfig);
+            const [transformationMatrix, rotationMatrix, modelMatrix,vpMatrix] = getTransformationMatrix(that.canvas.width / that.canvas.height,that.sceneConfig.objConfig, that.sceneConfig);
 
             const upVector = vec3.fromValues(0, 1, 0);
             const origin = vec3.fromValues(0, 0, 0);
@@ -802,6 +820,14 @@ export abstract class sceneRender extends scene {
                 transformationMatrix.buffer,
                 transformationMatrix.byteOffset,
                 transformationMatrix.byteLength
+            );
+            console.log(vpMatrix)
+            that.device.queue.writeBuffer(
+                that.vpMatrix as GPUBuffer,
+                0,
+                vpMatrix.buffer,
+                vpMatrix.byteOffset,
+                vpMatrix.byteLength
             );
 
             that.device.queue.writeBuffer(
@@ -914,7 +940,7 @@ export abstract class sceneRender extends scene {
                 layout: that.device.createPipelineLayout({ bindGroupLayouts: [that.pipelineGroupLayout as GPUBindGroupLayout] }),
                 vertex: {
                     module: that.device.createShaderModule({
-                        code: vertexShader
+                        code: vertexShader_skybox
                     }),
                     entryPoint: "main",
                     buffers: [
