@@ -65,36 +65,36 @@ export class Mtl {
                 else if (line.slice(0, 2) === "Ka") {
                     let temp=line.split(" ")
                     let comp:vec3 =[
-                        Number(temp[1]),
-                        Number(temp[2]),
-                        Number(temp[3])
+                        Number(temp[1])*255,
+                        Number(temp[2])*255,
+                        Number(temp[3])*255
                     ]
                     mtlTemp.Ka=comp
                 }
                 else if (line.slice(0, 2) === "Kd") {
                     let temp=line.split(" ")
                     let comp:vec3 =[
-                        Number(temp[1]),
-                        Number(temp[2]),
-                        Number(temp[3])
+                        Number(temp[1])*255,
+                        Number(temp[2])*255,
+                        Number(temp[3])*255
                     ]
                     mtlTemp.Kd=comp
                 }
                 else if (line.slice(0, 2) === "Ks") {
                     let temp=line.split(" ")
                     let comp:vec3 =[
-                        Number(temp[1]),
-                        Number(temp[2]),
-                        Number(temp[3])
+                        Number(temp[1])*255,
+                        Number(temp[2])*255,
+                        Number(temp[3])*255
                     ]
                     mtlTemp.Ks=comp
                 }
                 else if (line.slice(0, 2) === "Ke") {
                     let temp=line.split(" ")
                     let comp:vec3 =[
-                        Number(temp[1]),
-                        Number(temp[2]),
-                        Number(temp[3])
+                        Number(temp[1])*255,
+                        Number(temp[2])*255,
+                        Number(temp[3])*255
                     ]
                     mtlTemp.Ke=comp
                 }

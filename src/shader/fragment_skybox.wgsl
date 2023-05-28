@@ -61,5 +61,5 @@ fn main(
     pos1.z-=cameraPos.z;
 
 
-    return textureSample( skyTexture,  mySampler, pos1);
+    return textureSample(skyTexture,  mySampler, pos1);
 }

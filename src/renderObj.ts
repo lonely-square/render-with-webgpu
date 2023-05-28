@@ -49,16 +49,15 @@ export class renderObj implements renderObj_ {
     }
 
     /**
-     * 用于归一化模型大小
+     * 用于归一化模型大小 先缩放再平移
      * @param newRenderObj 待归一化模型
      * @param objMesh      初始图形数据，用来归一
-     * @private
      */
     private static normalizeModelSize(newRenderObj: renderObj, objMesh:ObjMesh): void {
-        newRenderObj.objConfig.scale.x/=objMesh.max
-        newRenderObj.objConfig.scale.y/=objMesh.max
-        newRenderObj.objConfig.scale.z/=objMesh.max
+        newRenderObj.objConfig.scale.x/=objMesh.maxY-objMesh.minY
+        newRenderObj.objConfig.scale.y/=objMesh.maxY-objMesh.minY
+        newRenderObj.objConfig.scale.z/=objMesh.maxY-objMesh.minY
         
-        newRenderObj.objConfig.position.y+=-objMesh.minY/objMesh.max
+        newRenderObj.objConfig.position.y+=-objMesh.minY/(objMesh.maxY-objMesh.minY)
     }
 }

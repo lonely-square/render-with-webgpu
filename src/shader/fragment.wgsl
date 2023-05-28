@@ -48,19 +48,26 @@ fn main(@location(0) pos: vec4<f32>,
   @location(4) shadowPos : vec3<f32>
 ) -> @location(0) vec4<f32> {
 
-    let kd = vec4<f32>(vec3<f32>(texConfig.kd)/vec3<f32>(255.0),1.0);
-    let ks = vec4<f32>(texConfig.ks,1.0);
+    let kd = vec4<f32>(texConfig.kd/vec3<f32>(255.0),0.0);
+    let ks = vec4<f32>(texConfig.ks/vec3<f32>(255.0),0.0);
+    let ka = vec4<f32>(texConfig.ka/vec3<f32>(255.0),0.0);
 
     //阴影
     var visibility = 0.0;
 
-    let oneOverShadowDepthTextureSize = 1.0 / 102400.0;
+    let oneOverShadowDepthTextureSize = 1.0 / 30000.0;
 
 
-    visibility += textureSampleCompare(
-    shadowMap, shadowSampler,
-    shadowPos.xy , shadowPos.z - 0.0002);
-
+    for (var y = -1; y <= 1; y++) {
+      for (var x = -1; x <= 1; x++) {
+        let offset = vec2<f32>(vec2(x, y)) * oneOverShadowDepthTextureSize;
+        visibility += textureSampleCompare(
+        shadowMap, shadowSampler,
+        shadowPos.xy + offset, shadowPos.z - 0.00009
+        );
+      }
+    }
+    visibility /= 9.0;
 
     //世界坐标的法线
     let n1=rotationMatrix*vec4<f32>(normalize(nv),1.0);
@@ -82,20 +89,25 @@ fn main(@location(0) pos: vec4<f32>,
       //b镜面反射角度系数
       let b= dot(reflection_dir,normalize(cameraPos-vec3<f32>(pos[0],pos[1],pos[2])));
 
-      res=res+
-      vec4<f32>(0.1,0.1,0.1,1.0)*vec4<f32>( vec4<f32>(lightcolor,1.0)*kd )+
-      saturate(a*vec4<f32>(lightcolor,1.0)*kd)+
-      saturate(pow(b,texConfig.Ns)*ks*vec4<f32>(lightcolor,1.0));
+      res=
+      res+
+      ka*0.3*vec4<f32>( vec4<f32>(lightcolor,0.0)*kd )+
+      saturate(a*vec4<f32>(lightcolor,0.0)*kd)+
+      vec4<f32>(0.3,0.3,0.3,0.0)*saturate(pow(b,texConfig.Ns)*ks*vec4<f32>(lightcolor,0.0))+
+      vec4<f32>(0.0,0.0,0.0,texConfig.d);
+      // res+
+      // vec4<f32>(0.1,0.1,0.1,1.0)*vec4<f32>( vec4<f32>(lightcolor,1.0)*kd )+
+      // saturate(a*vec4<f32>(lightcolor,1.0)*kd)+
+      // saturate(pow(b,texConfig.Ns)*ks*vec4<f32>(lightcolor,1.0));
     }
 
-    let lightcolor =lightConfig.light[0].color/vec3<f32>(255.0);
+  
     let lightDirection = vec3<f32>(0.0)-lightConfig.light[0].positon;
     let a=dot(vec4<f32>(-normalize(lightDirection),1.0),vec4<f32>(n,1.0))-1;
     const ambientFactor = 0.3;
     let lightingFactor = min(ambientFactor + visibility * a, 1.0);
 
-    // return res*visibility;
+    return res*vec4<f32>(lightingFactor,lightingFactor,lightingFactor,1.0);
 
-    return res*lightingFactor;
 }
 

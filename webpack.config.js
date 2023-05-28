@@ -1,6 +1,7 @@
 const path = require("path");
 const bundleOutputDir = "./dist";
 const CopyPlugin = require("copy-webpack-plugin");
+const {VueLoaderPlugin} = require("vue-loader")
 
 module.exports = {
     entry: {
@@ -13,7 +14,7 @@ module.exports = {
     },
     devtool: "inline-source-map", //开发环境中使用
     resolve: {
-        extensions: ['.js', '.ts']
+        extensions: ['.js', '.ts' ]
     },
     module: {
         rules: [
@@ -21,7 +22,13 @@ module.exports = {
                 test: /\.js$/,
                 exclude: ['/node_modules/']
             },            
-            { test: /\.tsx?$/, loader: "ts-loader" },        
+            { 
+                test: /\.tsx?$/,
+                loader: "ts-loader" ,
+                options:{
+                    appendTsSuffixTo: [/\.vue$/],
+                }   
+            },
             {
                 test: /\.css$/i,
                 use: ["style-loader", "css-loader"]
@@ -33,6 +40,10 @@ module.exports = {
                     loader: 'ts-shader-loader',
                   },
                 ],
+            },
+            {
+                test: /\.vue$/i,
+                use:[{ loader: 'vue-loader'}]
             },
             {
                 test: /\.obj$/i,
@@ -53,6 +64,7 @@ module.exports = {
             },
           ],
         }),
+        new VueLoaderPlugin()
     ],
 };
 

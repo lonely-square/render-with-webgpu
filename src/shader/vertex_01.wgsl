@@ -34,7 +34,7 @@ fn main(@builtin(vertex_index) index : u32 ,
     posFromLight.z
   );
   a.uv=uv;
-  a.nv=(modelMat *vec4<f32>(nv,1.0)).xyz;
+  a.nv=nv;
 
   return a;
 }

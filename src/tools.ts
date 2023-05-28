@@ -14,7 +14,7 @@ export function tools(): {
       //防抖
       debounce: function (fn: Function, timeout: number, ...args: any[]) {
         timer1 && clearTimeout(timer1);
-        timer1 = setTimeout(() => {
+        timer1  = setTimeout(() => {
           fn.apply(this, args);
         }, timeout);
       },
@@ -26,8 +26,7 @@ export function tools(): {
           //保证计时器方法一定在点击方法以前
           flag = 0;
           timer2 = setTimeout(() => {
-            let now = Date.now();
-            last = now;
+            last = Date.now();
             flag === 0 && fn.apply(this, args);
             //确保使间隔相同
           }, timeout - (now - last));

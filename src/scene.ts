@@ -96,11 +96,11 @@ export abstract class scene implements select {
             cameraConfig: {
                 position: {
                     x: 0,
-                    y: 1.84,
-                    z: 4.2
+                    y: 1.1,
+                    z: 1.8
                 },
                 rotation: {
-                    x: -0.4,
+                    x: -0.3,
                     y: 0,
                     z: 0
                 }

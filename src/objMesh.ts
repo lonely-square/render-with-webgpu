@@ -16,7 +16,7 @@ export class ObjMesh {
     vn: vec3[]
     vertices: { "mtlname": string, 'vertex': Float32Array, 'vertexCount': number }[]
 
-    max:number
+    maxY:number
     minY:number
 
     constructor() {
@@ -24,7 +24,7 @@ export class ObjMesh {
         this.vn = []
         this.vt = []
         this.vertices = []
-        this.max = 0
+        this.maxY =-Infinity
         this.minY =Infinity
     }
 
@@ -45,6 +45,7 @@ export class ObjMesh {
 
         lines.forEach(
             (line) => {
+
                 line = line.replace(/[\r\n]/g, "");
                 if (line[0] == "v" && line[1] == " ") {
                     this.read_vertex_data(line);
@@ -86,8 +87,7 @@ export class ObjMesh {
             Number(components[2]).valueOf(),
             Number(components[3]).valueOf()
         ];
-        let maxTemp = Math.max(...new_vertex.slice(0,3))
-        if(maxTemp > this.max) this.max =maxTemp
+        if(new_vertex[1] > this.maxY) this.maxY = new_vertex[1]
         if(new_vertex[1] < this.minY) this.minY = new_vertex[1]
 
         this.v.push(new_vertex);

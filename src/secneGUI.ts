@@ -58,6 +58,7 @@ export class sceneGUI extends sceneRender implements change {
         await this.render()
         await this.addCube()
         await this.addskybox()
+        // await this.addCube2()
         await this.addDebugCube()
         this.initController()
 
@@ -89,34 +90,58 @@ export class sceneGUI extends sceneRender implements change {
        
     }
 
+    //添加水平平面
     public async addCube(): Promise<void> {
         scene.switchFlag = true
 
-        // let vertex = new Float32Array([
-        //     1, 1, -1,    0, 0, 0, 0, 1,
-        //     1, -1, -1,    0, 0, 0, 0, 1,
-        //     -1, -1, -1,    0, 0, 0, 0, 1,
-
-        //     -1, -1, -1,    0, 0, 0, 0, 1,
-        //     -1, 1, -1,    0, 0, 0, 0, 1,
-        //     1, 1, -1,    0, 0, 0, 0, 1,
-        // ])
-
         let vertex = new Float32Array([
-            8, 0, 8, 0, 0, 0, 1, 0,
-            8, 0, -8, 0, 0, 0, 1, 0,
-            -8, 0, -8, 0, 0, 0, 1, 0,
+            5, 0, 5, 0, 0, 0, 1, 0,
+            5, 0, -5, 0, 0, 0, 1, 0,
+            -5, 0, -5, 0, 0, 0, 1, 0,
 
-            -8, 0, -8, 0, 0, 0, 1, 0,
-            -8, 0, 8, 0, 0, 0, 1, 0,
-            8, 0, 8, 0, 0, 0, 1, 0,
+            -5, 0, -5, 0, 0, 0, 1, 0,
+            -5, 0, 5, 0, 0, 0, 1, 0,
+            5, 0, 5, 0, 0, 0, 1, 0,
         ])
 
         let mtlConfig: mtlCongfig = {
             Ns: 10,
-            Ka: [0.5, 0.5, 0.5],
+            Ka: [100, 100, 100],
+            Kd: [200, 100, 100],
+            Ks: [255, 255, 255],
+            Ke: [0, 0, 0],
+            Ni: 1.45,
+            d: 1,
+            illum: 1,
+        }
+
+        let e: renderObj = new renderObj("正方面", vertex, 6, mtlConfig)
+        this.renderObjList.unshift(e)
+
+        await this.render()
+
+        this.initController()
+    }
+
+    //添加垂直平面
+    public async addCube2(): Promise<void> {
+        scene.switchFlag = true
+        let vertex = new Float32Array([
+            1, 1, -1,    0, 0, 0, 0, 1,
+            1, -1, -1,    0, 0, 0, 0, 1,
+            -1, -1, -1,    0, 0, 0, 0, 1,
+
+            -1, -1, -1,    0, 0, 0, 0, 1,
+            -1, 1, -1,    0, 0, 0, 0, 1,
+            1, 1, -1,    0, 0, 0, 0, 1,
+        ])
+
+
+        let mtlConfig: mtlCongfig = {
+            Ns: 10,
+            Ka: [100, 100, 100],
             Kd: [200, 0, 0],
-            Ks: [1, 1, 1],
+            Ks: [255, 255, 255],
             Ke: [0, 0, 0],
             Ni: 1.45,
             d: 1,
@@ -127,7 +152,7 @@ export class sceneGUI extends sceneRender implements change {
 
 
         let e: renderObj = new renderObj("正方面", vertex, 6, mtlConfig)
-        this.renderObjList.unshift(e)
+        this.renderObjList.push(e)
 
         await this.render()
 
@@ -136,6 +161,7 @@ export class sceneGUI extends sceneRender implements change {
 
     }
 
+    //Debug窗口
     public async addDebugCube(): Promise<void> {
         scene.switchFlag = true
 
@@ -170,6 +196,7 @@ export class sceneGUI extends sceneRender implements change {
 
     }
 
+    //天空盒
     public async addskybox(): Promise<void> {
         scene.switchFlag = true
 
@@ -261,8 +288,6 @@ export class sceneGUI extends sceneRender implements change {
         that.stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
         that.stats.showPanel(1);
         that.stats.showPanel(2);
-        // that.stats.showPanel(3);
-        // this.canvas.appendChild(that.stats.dom);
         document.body.appendChild(that.stats.dom);
 
         function animate() {
@@ -302,9 +327,9 @@ export class sceneGUI extends sceneRender implements change {
 
             folder_2.open()
             let folder_2_1 = folder_2.addFolder("camPosition")
-            folder_2_1.add(this.sceneConfig.cameraConfig.position as any, "x", undefined, undefined, 1).listen()
-            folder_2_1.add(this.sceneConfig.cameraConfig.position as any, "y", undefined, undefined, 1).listen()
-            folder_2_1.add(this.sceneConfig.cameraConfig.position as any, "z", undefined, undefined, 1).listen()
+            folder_2_1.add(this.sceneConfig.cameraConfig.position as any, "x", undefined, undefined, 0.01).listen()
+            folder_2_1.add(this.sceneConfig.cameraConfig.position as any, "y", undefined, undefined, 0.01).listen()
+            folder_2_1.add(this.sceneConfig.cameraConfig.position as any, "z", undefined, undefined, 0.01).listen()
 
             let folder_2_2 = folder_2.addFolder("camRotation")
             folder_2_2.add(this.sceneConfig.cameraConfig.rotation as any, "x", undefined, undefined, 0.01).listen()
@@ -372,14 +397,14 @@ export class sceneGUI extends sceneRender implements change {
                 folder_1_3.add(this.renderObjList[i].objConfig.scale as any, "y", undefined, undefined, 0.01)
                 folder_1_3.add(this.renderObjList[i].objConfig.scale as any, "z", undefined, undefined, 0.01)
 
-                folder_4_1.add(this.renderObjList[i].mtlConfig, "Ns").name('高光反射指数')
-                folder_4_1.add(this.renderObjList[i].mtlConfig, "Ni").name('折射率')
-                folder_4_1.add(this.renderObjList[i].mtlConfig, "d").name('透明度')
-                folder_4_1.add(this.renderObjList[i].mtlConfig, "illum").name('光照模式')
+                folder_4_1.add(this.renderObjList[i].mtlConfig, "Ns",0.01).name('高光反射指数')
+                // folder_4_1.add(this.renderObjList[i].mtlConfig, "Ni").name('折射率')
+                if(!this.renderObjList[i].mtlConfig.map_d) folder_4_1.add(this.renderObjList[i].mtlConfig, "d",0,1,0.01).name('透明度')
+                // folder_4_1.add(this.renderObjList[i].mtlConfig, "illum").name('光照模式')
                 folder_4_1.addColor(this.renderObjList[i].mtlConfig, "Ka").name('环境光反射系数')
-                folder_4_1.addColor(this.renderObjList[i].mtlConfig, "Ks").name('高光反射系数')
-                folder_4_1.addColor(this.renderObjList[i].mtlConfig, "Kd").name('漫反射系数')
-                folder_4_1.addColor(this.renderObjList[i].mtlConfig, "Ke").name('自发光颜色')
+                if(!this.renderObjList[i].mtlConfig.map_Ks) folder_4_1.addColor(this.renderObjList[i].mtlConfig, "Ks").name('高光反射系数')
+                if(!this.renderObjList[i].mtlConfig.map_Kd) folder_4_1.addColor(this.renderObjList[i].mtlConfig, "Kd").name('漫反射系数')
+                // folder_4_1.addColor(this.renderObjList[i].mtlConfig, "Ke").name('自发光颜色')
 
                 let a = {
                     fn: async function () {
@@ -437,10 +462,10 @@ export class sceneGUI extends sceneRender implements change {
             this.canvas?.addEventListener('wheel', (e) => {
 
                 if (e.deltaY < 0) {
-                    ctrl.throttle(Med, timeout, [0.0, 0.0, -0.03])
+                    ctrl.throttle(Med, timeout, [0.0, 0.0, -0.01])
                 }
                 if (e.deltaY > 0) {
-                    ctrl.throttle(Med, timeout, [0.0, 0.0, 0.03])
+                    ctrl.throttle(Med, timeout, [0.0, 0.0, 0.01])
                 }
             })
 

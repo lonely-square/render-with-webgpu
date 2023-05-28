@@ -53,9 +53,27 @@ fn main(
 ) -> @location(0) vec4<f32> {
 
     
-    let d = textureSample(dTexture, mySampler, uv);
-    let ks = vec4<f32>(texConfig.ks,1.0);
-    let kd = d;
+    let kd = textureSample(dTexture, mySampler, uv);
+    let d = textureSample(kdTexture, mySampler, uv);
+    let ks = vec4<f32>(texConfig.ks/vec3<f32>(255.0),0.0);
+    let ka = vec4<f32>(texConfig.ka/vec3<f32>(255.0),0.0);
+
+    //阴影
+    var visibility = 0.0;
+
+    let oneOverShadowDepthTextureSize = 1.0 / 30000.0;
+
+
+    for (var y = -1; y <= 1; y++) {
+      for (var x = -1; x <= 1; x++) {
+        let offset = vec2<f32>(vec2(x, y)) * oneOverShadowDepthTextureSize;
+        visibility += textureSampleCompare(
+        shadowMap, shadowSampler,
+        shadowPos.xy + offset, shadowPos.z - 0.0001
+        );
+      }
+    }
+    visibility /= 9.0;
 
     //世界坐标的法线
     let n1=rotationMatrix*vec4<f32>(nv,1.0);
@@ -81,13 +99,18 @@ fn main(
 
       res=
       res+
-      vec4<f32>(0.1,0.1,0.1,0.0)*vec4<f32>( vec4<f32>(lightcolor,1.0)*kd )+
-      vec4<f32>(1.0,1.0,1.0,0.0)*saturate(a*vec4<f32>(lightcolor,1.0)*kd)+
-      vec4<f32>(0.3,0.3,0.3,0.0)*saturate(pow(b,texConfig.Ns)*ks*vec4<f32>(lightcolor,1.0))+
+      ka*0.3*vec4<f32>( vec4<f32>(lightcolor,0.0)*kd )+
+      saturate(a*vec4<f32>(lightcolor,0.0)*kd)+
+      vec4<f32>(0.3,0.3,0.3,0.0)*saturate(pow(b,texConfig.Ns)*ks*vec4<f32>(lightcolor,0.0))+
       vec4<f32>(0.0,0.0,0.0,d.a);
     }
 
 
-    return res;
+    let lightDirection = vec3<f32>(0.0)-lightConfig.light[0].positon;
+    let a=dot(vec4<f32>(-normalize(lightDirection),1.0),vec4<f32>(n,1.0))-1;
+    const ambientFactor = 0.3;
+    let lightingFactor = min(ambientFactor + visibility * a, 1.0);
+
+    return res*vec4<f32>(lightingFactor,lightingFactor,lightingFactor,1.0);
 
 }

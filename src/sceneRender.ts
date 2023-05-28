@@ -38,10 +38,10 @@ export abstract class sceneRender extends scene {
     private vpMatrix: GPUBuffer | null = null
     private mvpMatrixList: GPUBuffer[] = []
     private modelMatrix: GPUBuffer | null = null
-    private rotationMatrix: GPUBuffer | null = null
     private depthTexture: GPUTexture | null = null
     private pipeline: GPURenderPipeline[] = []
 
+    private rotationMatrixList: GPUBuffer[] = []
     private lightViewProjMatrix: GPUBuffer | null = null
     private skyboxList: GPUTexture[] = []
     private lightConfig: GPUBuffer | null = null
@@ -73,6 +73,7 @@ export abstract class sceneRender extends scene {
         this.skyboxList = []
         this.mvpMatrixList =[]
         this.shadowBindGroupList =[]
+        this.rotationMatrixList =[]
         return super.init(modelUrl, mtlUrl, texUrl)
     }
     /**
@@ -463,6 +464,13 @@ export abstract class sceneRender extends scene {
             //设置渲染管线
 
             that.pipeline.push(this.prePipline(renderObj))
+
+            //法向量用的旋转矩阵
+
+            that.rotationMatrixList.push(that.device.createBuffer({
+                size: 4 * 4 * 4,
+                usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+            }))
         }
 
         //shadow map阴影管道
@@ -532,11 +540,6 @@ export abstract class sceneRender extends scene {
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
 
-        that.rotationMatrix = that.device.createBuffer({
-            size: 4 * 4 * 4,
-            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-        });
-
         //光线方面
         that.lightConfig = that.device.createBuffer({
             size: 4 * 16 * 10,
@@ -592,7 +595,7 @@ export abstract class sceneRender extends scene {
                     {
                         binding: 6,
                         resource: {
-                            buffer: that.rotationMatrix as GPUBuffer,
+                            buffer: that.rotationMatrixList[index] as GPUBuffer,
                         }
                     },
                     {
@@ -706,7 +709,7 @@ export abstract class sceneRender extends scene {
             {
                 that.renderObjList.forEach((renderObj, index) => {
                     
-                    const [transformationMatrix, rotationMatrix, modelMatrix] = getTransformationMatrix(that.canvas.width / that.canvas.height, renderObj.objConfig, that.sceneConfig);
+                    const [transformationMatrix, tempX, modelMatrix] = getTransformationMatrix(that.canvas.width / that.canvas.height, renderObj.objConfig, that.sceneConfig);
 
                     that.device.queue.writeBuffer(
                         that.mvpMatrixList[index],
@@ -746,9 +749,28 @@ export abstract class sceneRender extends scene {
                         array2.byteOffset,
                         array2.byteLength
                     );
+                    
+                    let rotation1 = renderObj.objConfig.rotation
+                    let rotation2 = that.sceneConfig.objConfig.rotation
+                    const rotationMatrix = mat4.create();
+                    mat4.rotateX(rotationMatrix, rotationMatrix, rotation1.x)
+                    mat4.rotateY(rotationMatrix, rotationMatrix, rotation1.y)
+                    mat4.rotateZ(rotationMatrix, rotationMatrix, rotation1.z)
+                    mat4.rotateX(rotationMatrix, rotationMatrix, rotation2.x)
+                    mat4.rotateY(rotationMatrix, rotationMatrix, rotation2.y)
+                    mat4.rotateZ(rotationMatrix, rotationMatrix, rotation2.z)
+                    
+                    that.device.queue.writeBuffer(
+                        that.rotationMatrixList[index] as GPUBuffer,
+                        0,
+                        (rotationMatrix as Float32Array).buffer,
+                        (rotationMatrix as Float32Array).byteOffset,
+                        (rotationMatrix as Float32Array).byteLength
+                    );
+
                 })
                 
-            const [transformationMatrix, rotationMatrix, modelMatrix,vpMatrix] = getTransformationMatrix(that.canvas.width / that.canvas.height,that.sceneConfig.objConfig, that.sceneConfig);
+            const [transformationMatrix, tempX, modelMatrix,vpMatrix] = getTransformationMatrix(that.canvas.width / that.canvas.height,that.sceneConfig.objConfig, that.sceneConfig);
 
             const upVector = vec3.fromValues(0, 1, 0);
             const origin = vec3.fromValues(0, 0, 0);
@@ -761,7 +783,7 @@ export abstract class sceneRender extends scene {
             mat4.lookAt(lightViewMatrix, lightPosition, origin, upVector);
 
 
-            let dis = 15
+            let dis = 7
             const lightProjectionMatrix = mat4.create();
             {
 
@@ -821,7 +843,7 @@ export abstract class sceneRender extends scene {
                 transformationMatrix.byteOffset,
                 transformationMatrix.byteLength
             );
-            console.log(vpMatrix)
+
             that.device.queue.writeBuffer(
                 that.vpMatrix as GPUBuffer,
                 0,
@@ -838,13 +860,6 @@ export abstract class sceneRender extends scene {
                 modelMatrix.byteLength
             );
 
-            that.device.queue.writeBuffer(
-                that.rotationMatrix as GPUBuffer,
-                0,
-                rotationMatrix.buffer,
-                rotationMatrix.byteOffset,
-                rotationMatrix.byteLength
-            );
 
             }
 
@@ -973,8 +988,7 @@ export abstract class sceneRender extends scene {
                     entryPoint: 'main',
                     targets: [
                         {
-                            format: that.presentationFormat as GPUTextureFormat,
-                            blend: blendState
+                            format: that.presentationFormat as GPUTextureFormat
                         },
                     ],
                 },
@@ -983,7 +997,7 @@ export abstract class sceneRender extends scene {
                     // cullMode: 'back',
                 },
                 depthStencil: {
-                    depthWriteEnabled: true,
+                    depthWriteEnabled: false,
                     depthCompare: 'less',
                     format: 'depth24plus-stencil8',
                 },
@@ -1046,19 +1060,6 @@ export abstract class sceneRender extends scene {
             renderObj.mtlConfig.map_Kd &&
             renderObj.mtlConfig.map_Ks
         ) {
-            const blendState1: GPUBlendState = {
-                color: {
-                    srcFactor: "src-alpha",
-                    dstFactor: "one-minus-src-alpha",
-                    operation: "add"
-                },
-                alpha: {
-                    srcFactor: "one-minus-src-alpha",
-                    dstFactor: "src-alpha",
-                    operation: "add"
-                }
-            };
-
             res = that.device.createRenderPipeline({
                 layout: that.device.createPipelineLayout({ bindGroupLayouts: [that.pipelineGroupLayout as GPUBindGroupLayout] }),
                 vertex: {
@@ -1096,19 +1097,13 @@ export abstract class sceneRender extends scene {
                     entryPoint: 'main',
                     targets: [
                         {
-                            format: that.presentationFormat as GPUTextureFormat,
-                            // blend:blendState1
+                            format: that.presentationFormat as GPUTextureFormat
                         },
                     ],
-                    // constants: {
-                    //     shadowDepthTextureSize,
-                    // },
                 },
                 primitive: {
                     topology: 'triangle-list',
-                    // cullMode: 'back',
                 },
-
                 depthStencil: {
                     depthWriteEnabled: true,
                     depthCompare: 'less',
@@ -1119,19 +1114,6 @@ export abstract class sceneRender extends scene {
         else if (renderObj.mtlConfig.map_d &&
             renderObj.mtlConfig.map_Kd
         ) {
-            const blendState2: GPUBlendState = {
-                color: {
-                    srcFactor: "src-alpha",
-                    dstFactor: "one-minus-src-alpha",
-                    operation: "add"
-                },
-                alpha: {
-                    srcFactor: "src-alpha",
-                    dstFactor: "one-minus-src-alpha",
-                    operation: "add"
-                }
-            };
-
             res = that.device.createRenderPipeline({
                 layout: that.device.createPipelineLayout({ bindGroupLayouts: [that.pipelineGroupLayout as GPUBindGroupLayout] }),
                 vertex: {
@@ -1170,7 +1152,7 @@ export abstract class sceneRender extends scene {
                     targets: [
                         {
                             format: that.presentationFormat as GPUTextureFormat,
-                            blend: blendState2
+                            blend: blendState
                         },
                     ],
                     // constants: {
@@ -1348,6 +1330,7 @@ export abstract class sceneRender extends scene {
                     targets: [
                         {
                             format: that.presentationFormat as GPUTextureFormat,
+                            blend: blendState
                         },
                     ],
                     // constants: {
