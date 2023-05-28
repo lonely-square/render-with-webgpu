@@ -288,7 +288,8 @@ export class sceneGUI extends sceneRender implements change {
         that.stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
         that.stats.showPanel(1);
         that.stats.showPanel(2);
-        document.body.appendChild(that.stats.dom);
+        
+        document.getElementById("stats")?.appendChild(that.stats.dom);
 
         function animate() {
             that.stats.begin();
@@ -301,6 +302,7 @@ export class sceneGUI extends sceneRender implements change {
         that.datGUi.destroy()
 
         that.datGUi = new dat.GUI
+        // document.getElementById("datui")?.appendChild(that.datGUi.domElement);
 
         //摄像机和场景
         {

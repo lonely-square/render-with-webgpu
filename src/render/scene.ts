@@ -14,6 +14,10 @@ export abstract class scene implements select {
     public name: string
     protected static switchFlag: boolean
 
+    public getSwitchFlag(): boolean {
+        return scene.switchFlag
+    }
+
     public abstract switchScene(name: string): Promise<void>
 
     /**

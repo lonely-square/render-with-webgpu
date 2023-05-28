@@ -8,7 +8,7 @@
         "dom"
       ],
       "types": [
-        "node",
+        
         "@webgpu/types"
       ],
       "module": "es2015",

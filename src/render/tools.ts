@@ -6,8 +6,8 @@ export function tools(): {
     debounce: (fn: Function, timeout: number, ...args: any[]) => void;
     throttle: (fn: Function, timeout: number, ...args: any[]) => void;
   } {
-    let timer1: NodeJS.Timeout | null = null;
-    let timer2: NodeJS.Timeout | null = null,
+    let timer1 : any = null;
+    let timer2 : any = null,
       last: number,
       flag = 0;
     return {

@@ -5,6 +5,7 @@ export interface Scene_ extends select,change{}
 
 export interface select {
     switchScene(name: string): Promise<void>
+    getSwitchFlag(): boolean
 }
 
 export interface change{

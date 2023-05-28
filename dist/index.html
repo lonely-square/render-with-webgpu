@@ -10,41 +10,7 @@
 </head>
 
 <body>
-
-   <div class="flexWrap">
-
-      <h1 class="box">机械零件渲染系统</h1>
-      <br />
-      <label >Choose a obj file:</label>
-
-      <select id="objSelect">
-         <option value="">--Please choose an obj file--</option>
-         <option value="lantern">lantern</option>
-         <option value="girl">girl</option>
-      </select>
-
-      <div>
-         <form enctype="multipart/form-data">
-            obj文件:
-            <input type="file" id="objInput" name="fileToUpload"><br>
-            mtl文件:
-            <input type="file" id="mtlInput" name="fileToUpload"><br>
-            贴图文件:
-            <input type="file" id="texInput" name="fileToUpload" multiple="multiple"><br>
-            <button type="button" id="subButton">上传模型</button>
-          </form>
-          
-      </div>
-
-      <div>
-         <button id="addCubeButton">添加正方面</button>
-         <button id="addLightButton">添加光源</button>
-         <button >添加天空盒</button>
-      </div>
-
-      <canvas id="canvas-webgpu" width="500px" height="1000px" tabindex='-1'></canvas>
-   </div>
-
+    <div id="app"></div>
    <script src="main.bundle.js"></script>
 </body>
 

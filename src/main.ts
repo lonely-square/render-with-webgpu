@@ -1,5 +1,5 @@
-import { Scene_, select } from './interface';
-import { sceneGUI } from './secneGUI';
+import { Scene_, select } from './render/interface';
+import { sceneGUI } from './render/secneGUI';
 
 
 
