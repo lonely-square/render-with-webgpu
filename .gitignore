@@ -4,4 +4,5 @@ dist/*
 .idea
 
 !dist/index.html
+!dist/index2.html
 !dist/theme.css
